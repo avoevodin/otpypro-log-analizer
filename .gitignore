@@ -146,3 +146,4 @@ static/
 
 log/
 reports/
+generated_logs/
