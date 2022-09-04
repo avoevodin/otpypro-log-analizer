@@ -17,11 +17,13 @@ fake = Faker()
 
 
 def clear_test_logs_dir():
+    """TODO"""
     for f in os.listdir(TEST_LOG_DIR):
         os.remove(os.path.join(TEST_LOG_DIR, f))
 
 
 def create_logfile(fn: str, ext: str, records_cnt: int):
+    """TODO"""
     fn = f"{fn}{ext if ext != GZ_EXT else ''}"
     f_path = Path(TEST_LOG_DIR, fn)
     with open(f_path, "w", encoding=LOG_ENC) as f:
@@ -47,6 +49,7 @@ def create_logfile(fn: str, ext: str, records_cnt: int):
 
 
 def generate_logs_filenames(days_cnt: int) -> list[tuple]:
+    """TODO"""
     base = datetime.datetime.today()
     dates_list = [base - datetime.timedelta(days=x) for x in range(days_cnt)]
     names = map(
@@ -65,6 +68,7 @@ def generate_logs_filenames(days_cnt: int) -> list[tuple]:
 
 
 def create_logs(params: Namespace):
+    """TODO"""
     logging.info("Start logs generation...")
     clear_test_logs_dir()
     cnt = int(params.cnt)
@@ -76,6 +80,7 @@ def create_logs(params: Namespace):
 
 
 def main(params: Namespace):
+    """TODO"""
     create_logs(params)
 
 

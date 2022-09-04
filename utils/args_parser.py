@@ -4,7 +4,6 @@ Parse args passed to cli
 
 import argparse
 from argparse import Namespace
-import sys
 
 
 def get_parsed_args(params: list) -> Namespace:
