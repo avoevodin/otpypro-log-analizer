@@ -8,6 +8,7 @@ from pathlib import Path
 from faker import Faker
 
 from utils.args_parser import get_args_create_test_logs
+from utils.logging_utils import logging_info
 
 TEST_LOG_DIR = "generated_logs"
 LOG_ENC = "UTF-8"
@@ -18,13 +19,17 @@ fake = Faker()
 
 def clear_test_logs_dir():
     """TODO"""
+    logging_info("Start clearing logs directory.")
     for f in os.listdir(TEST_LOG_DIR):
         os.remove(os.path.join(TEST_LOG_DIR, f))
+    logging_info("Finish clering logs directory.")
 
 
 def create_logfile(fn: str, ext: str, records_cnt: int):
     """TODO"""
-    fn = f"{fn}{ext if ext != GZ_EXT else ''}"
+    f_ext = ext if ext != GZ_EXT else ""
+    fn = f"{fn}{f_ext}"
+    logging_info(f"Start creating a file '{fn}'")
     f_path = Path(TEST_LOG_DIR, fn)
     with open(f_path, "w", encoding=LOG_ENC) as f:
         f.writelines(
@@ -42,10 +47,16 @@ def create_logfile(fn: str, ext: str, records_cnt: int):
             ]
         )
     if ext == GZ_EXT:
+        logging_info(f"Start compressing the file {fn}")
         f_gz_path = Path(TEST_LOG_DIR, f"{fn}{ext}")
         with open(f_path, "rb") as f, gzip.open(f_gz_path, "wb") as f_gz:
             f_gz.writelines(f)
         os.remove(f_path)
+        logging_info(
+            f"Compressing the file '{fn}' has been completed. Created '{fn}{ext}' archive."
+        )
+
+    logging_info(f"The file '{fn}{ext}' has been created successfully.")
 
 
 def generate_logs_filenames(days_cnt: int) -> list[tuple]:
@@ -69,21 +80,26 @@ def generate_logs_filenames(days_cnt: int) -> list[tuple]:
 
 def create_logs(params: Namespace):
     """TODO"""
-    logging.info("Start logs generation...")
+    logging_info("Start logs generation...")
     clear_test_logs_dir()
     cnt = int(params.cnt)
     records = int(params.records)
     filenames = generate_logs_filenames(cnt)
     for fn, ext in filenames:
         create_logfile(fn, ext, records)
-    logging.info("Finish logs generation...")
+    logging_info("Finish logs generation...")
 
 
-def main(params: Namespace):
+def main():
     """TODO"""
-    create_logs(params)
+    logging.basicConfig(
+        format="%(asctime)s %(clientip)-15s %(user)-8s %(message)s",
+        datefmt="%Y.%m.%d %H:%M:%S",
+        level="INFO",
+    )
+    args = get_args_create_test_logs()
+    create_logs(args)
 
 
 if __name__ == "__main__":
-    args = get_args_create_test_logs()
-    main(args)
+    main()
