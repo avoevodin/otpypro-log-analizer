@@ -15,6 +15,7 @@ from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
 from statistics import mean, median
+from string import Template
 from typing import Generator
 
 from utils.args_parser import get_args_log_analyzer
@@ -118,6 +119,7 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
 
         yield url, time
 
+    print(errors_cnt, errors_limit)
     if errors_cnt > errors_limit:
         raise ValueError(
             f"Too much errors has occurred while parsing file {filepath!r}"
@@ -183,8 +185,21 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
     return report_data
 
 
-def create_report_file(report_data: list[dict], config: dict) -> None:
-    pass
+def create_report_file(
+    report_data: list[dict], report_date: datetime, conf: dict
+) -> None:
+    report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
+    with open(
+        "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
+    ) as report_template:
+        with open(
+            Path(conf["REPORT_DIR"], report_fn), "w", encoding=conf["DATA_ENCONDING"]
+        ) as report:
+            report_str_template = Template(report_template.read())
+            report_str = report_str_template.safe_substitute(
+                table_json=json.dumps(report_data)
+            )
+            report.write(report_str)
 
 
 def main() -> None:
@@ -194,10 +209,10 @@ def main() -> None:
         setup_logging(conf)
 
         logging_info("Log analyzer has been started...")
-        log_file_info, log_file_data = get_log_data(config)
-        parsed_data = parse_log_data(log_file_data, log_file_info.path, config)
+        log_file_info, log_file_data = get_log_data(conf)
+        parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
-        create_report_file(report_data, config)
+        create_report_file(report_data, log_file_info.date, conf)
         print(log_file_info)
 
         logging_info("Log analyzer has been successfully finished...")
