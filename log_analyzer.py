@@ -13,26 +13,27 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
-from io import TextIOWrapper
 from pathlib import Path
-from typing import TextIO
+from typing import Generator
 
 from utils.args_parser import get_args_log_analyzer
 from utils.logging_utils import (
     logging_exception,
     setup_logging,
     logging_info,
-    logging_error,
     logging_warning,
 )
+
+CONFIG_DEFAULT_PATH = "config.json"
+PARSE_ERROR_LIMIT = 0.2
 
 config = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./log",
+    "DATA_ENCONDING": "UTF-8",
+    "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
 }
-
-CONFIG_DEFAULT_PATH = "config.json"
 
 
 def get_config() -> dict:
@@ -94,14 +95,40 @@ def get_log_data(conf: dict) -> (namedtuple, list[str]):
     return log_file_info, f_lines
 
 
-def parse_log_data(log_data: list[str], conf: dict) -> (str, bool):
+def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str, bool):
     """TODO"""
-    return "", True
+    logging_info(f"Start parsing log file ({filepath!r}) data...")
+    errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
+    errors_limit = len(log_file_data) * errors_limit
+    errors_cnt = 0
+
+    for line in log_file_data:
+        line = line.replace('"', "")
+        try:
+            srch_result = re.search(
+                r"^.* (?P<url>/.+) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
+            )
+            url = srch_result.group("url")
+            time = float(srch_result.group("time"))
+        except ValueError as e:
+            logging_warning(f"The error occurred while parsing file {filepath!r}: {e}")
+            errors_cnt += 1
+            continue
+
+        yield url, time
+
+    if errors_cnt > errors_limit:
+        raise ValueError(
+            f"Too much errors has occurred while parsing file {filepath!r}"
+        )
+    else:
+        logging_info(f"The file {filepath!r} has been parsed successfully.")
 
 
-def create_log_report(report_data: str, conf: dict):
+def create_log_report(report_data: Generator, conf: dict):
     """TODO"""
-    pass
+    for url, time in report_data:
+        print(url, time)
 
 
 def main():
@@ -109,14 +136,12 @@ def main():
     try:
         conf = get_config()
         setup_logging(conf)
+
         logging_info("Log analyzer has been started...")
         log_file_info, log_file_data = get_log_data(config)
-
-        report_data, parsing_completed = parse_log_data(log_data, config)
-        if parsing_completed:
-            create_log_report(report_data, config)
-        else:
-            raise ValueError("Too much errors while parsing!")
+        report_data = parse_log_data(log_file_data, log_file_info.path, config)
+        create_log_report(report_data, config)
+        print(log_file_info)
 
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
