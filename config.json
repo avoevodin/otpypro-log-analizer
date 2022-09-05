@@ -1,5 +1,5 @@
 {
-    "REPORT_SIZE": 500,
+    "REPORT_SIZE": 3,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./generated_logs",
     "SOME_FLAG": true,

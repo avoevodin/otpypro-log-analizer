@@ -6,7 +6,7 @@ import logging
 import socket
 
 
-def get_extra_data():
+def get_extra_data() -> None:
     """TODO"""
     return {
         "clientip": socket.gethostbyname(socket.gethostname()),
@@ -14,27 +14,27 @@ def get_extra_data():
     }
 
 
-def logging_info(message: str):
+def logging_info(message: str) -> None:
     """TODO"""
     logging.info(message, extra=get_extra_data())
 
 
-def logging_error(message: str):
+def logging_error(message: str) -> None:
     """TODO"""
     logging.error(message, extra=get_extra_data())
 
 
-def logging_warning(message: str):
+def logging_warning(message: str) -> None:
     """TODO"""
     logging.warning(message, extra=get_extra_data())
 
 
-def logging_exception(message: str):
+def logging_exception(message: str) -> None:
     """TODO"""
     logging.exception(message, extra=get_extra_data(), exc_info=True)
 
 
-def setup_logging(conf: dict):
+def setup_logging(conf: dict) -> None:
     """TODO"""
     logging.basicConfig(
         filename=conf.get("LOGS_FILENAME"),

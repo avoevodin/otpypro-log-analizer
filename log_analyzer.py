@@ -14,6 +14,7 @@ import sys
 from collections import namedtuple
 from datetime import datetime
 from pathlib import Path
+from statistics import mean, median
 from typing import Generator
 
 from utils.args_parser import get_args_log_analyzer
@@ -110,7 +111,7 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
             )
             url = srch_result.group("url")
             time = float(srch_result.group("time"))
-        except ValueError as e:
+        except Exception as e:
             logging_warning(f"The error occurred while parsing file {filepath!r}: {e}")
             errors_cnt += 1
             continue
@@ -122,16 +123,71 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
-        logging_info(f"The file {filepath!r} has been parsed successfully.")
+        errors_percentage_text = (
+            f" There were {errors_cnt/len(log_file_data)}% of errors."
+            if errors_cnt
+            else ""
+        )
+        logging_info(
+            f"The file {filepath!r} has been parsed successfully.{errors_percentage_text}"
+        )
 
 
-def create_log_report(report_data: Generator, conf: dict):
+def prepare_report_data(parsed_data: Generator) -> list[dict]:
     """TODO"""
-    for url, time in report_data:
-        print(url, time)
+    logging_info(f"Start preparing report data...")
+    urls_data = {}
+    total_time_sum = total_measurments = 0
+    for url, time in parsed_data:
+        url_measurments = urls_data.get(url)
+        if url_measurments:
+            url_measurments["series"].append(time)
+            url_measurments["time_sum"] += time
+        else:
+            urls_data[url] = {
+                "series": [time],
+                "time_sum": time,
+            }
+        total_time_sum += time
+        total_measurments += 1
+
+    urls_data = list(
+        map(
+            lambda data: {
+                "url": data[0],
+                "series": data[1]["series"],
+                "time_sum": data[1]["time_sum"],
+            },
+            urls_data.items(),
+        )
+    )
+    urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
+    urls_data = urls_data[: config["REPORT_SIZE"]]
+
+    report_data = []
+    for url_data in urls_data:
+        url, series, time_sum = url_data.values()
+        report_data.append(
+            {
+                "url": url,
+                "count": len(series),
+                "count_perc": len(series) / total_measurments,
+                "time_sum": time_sum,
+                "time_perc": time_sum / total_time_sum,
+                "time_avg": mean(series),
+                "time_max": max(series),
+                "time_med": median(series),
+            }
+        )
+    logging_info(f"Report data has been prepared successfully.")
+    return report_data
 
 
-def main():
+def create_report_file(report_data: list[dict], config: dict) -> None:
+    pass
+
+
+def main() -> None:
     """TODO"""
     try:
         conf = get_config()
@@ -139,8 +195,9 @@ def main():
 
         logging_info("Log analyzer has been started...")
         log_file_info, log_file_data = get_log_data(config)
-        report_data = parse_log_data(log_file_data, log_file_info.path, config)
-        create_log_report(report_data, config)
+        parsed_data = parse_log_data(log_file_data, log_file_info.path, config)
+        report_data = prepare_report_data(parsed_data)
+        create_report_file(report_data, config)
         print(log_file_info)
 
         logging_info("Log analyzer has been successfully finished...")

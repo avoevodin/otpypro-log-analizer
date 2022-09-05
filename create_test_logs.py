@@ -17,7 +17,7 @@ GZ_EXT = ".gz"
 fake = Faker()
 
 
-def clear_test_logs_dir():
+def clear_test_logs_dir() -> None:
     """TODO"""
     logging_info("Start clearing logs directory.")
     for f in os.listdir(TEST_LOG_DIR):
@@ -25,7 +25,7 @@ def clear_test_logs_dir():
     logging_info("Finish clearing logs directory.")
 
 
-def create_log_file(fn: str, ext: str, records: list):
+def create_log_file(fn: str, ext: str, records: list) -> None:
     """TODO"""
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
@@ -46,7 +46,7 @@ def create_log_file(fn: str, ext: str, records: list):
     logging_info(f"The file '{fn}{ext}' has been created successfully.")
 
 
-def generate_log_files(logs_data: list[tuple]):
+def generate_log_files(logs_data: list[tuple]) -> None:
     """TODO"""
     for fn, ext, records in logs_data:
         create_log_file(fn, ext, records)
@@ -122,7 +122,7 @@ def generate_logs_data(days_cnt: int, records_cnt: int) -> list[tuple]:
     return logs_data
 
 
-def create_logs(params: Namespace):
+def create_logs(params: Namespace) -> None:
     """TODO"""
     logging_info("Start logs generation...")
     clear_test_logs_dir()
@@ -133,7 +133,7 @@ def create_logs(params: Namespace):
     logging_info("Finish logs generation...")
 
 
-def main():
+def main() -> None:
     """TODO"""
     setup_logging({})
     args = get_args_create_test_logs()
