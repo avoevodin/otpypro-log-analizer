@@ -54,6 +54,7 @@ def generate_log_files(logs_data: list[tuple]):
 
 
 def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
+    """TODO"""
     records = []
     start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
     end_date = start_date + datetime.timedelta(1) - datetime.timedelta(microseconds=1)
