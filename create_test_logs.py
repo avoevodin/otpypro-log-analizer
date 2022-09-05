@@ -1,10 +1,9 @@
 import datetime
 import gzip
-import logging
 import os
+import random
 from argparse import Namespace
 from pathlib import Path
-import random
 
 from faker import Faker
 

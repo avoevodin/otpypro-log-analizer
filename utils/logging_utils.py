@@ -1,11 +1,9 @@
 """
 TODO
 """
-from datetime import datetime
+import getpass
 import logging
 import socket
-import getpass
-from pathlib import Path
 
 
 def get_extra_data():
@@ -16,14 +14,24 @@ def get_extra_data():
     }
 
 
-def logging_info(message):
+def logging_info(message: str):
     """TODO"""
     logging.info(message, extra=get_extra_data())
 
 
-def logging_exception(message):
+def logging_error(message: str):
     """TODO"""
-    logging.exception(message, extra=get_extra_data())
+    logging.error(message, extra=get_extra_data())
+
+
+def logging_warning(message: str):
+    """TODO"""
+    logging.warning(message, extra=get_extra_data())
+
+
+def logging_exception(message: str):
+    """TODO"""
+    logging.exception(message, extra=get_extra_data(), exc_info=True)
 
 
 def setup_logging(conf: dict):
@@ -32,5 +40,5 @@ def setup_logging(conf: dict):
         filename=conf.get("LOGS_FILENAME"),
         format="%(asctime)s %(clientip)-15s %(user)-8s %(message)s",
         datefmt="%Y.%m.%d %H:%M:%S",
-        level="INFO",
+        level=conf.get("LOG_LEVEL") or "DEBUG",
     )
