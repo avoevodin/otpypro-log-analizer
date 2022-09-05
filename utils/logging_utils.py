@@ -22,10 +22,12 @@ def logging_info(message):
 
 
 def logging_exception(message):
+    """TODO"""
     logging.exception(message, extra=get_extra_data())
 
 
 def setup_logging(conf: dict):
+    """TODO"""
     logging.basicConfig(
         filename=conf.get("LOGS_FILENAME"),
         format="%(asctime)s %(clientip)-15s %(user)-8s %(message)s",
