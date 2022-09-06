@@ -14,10 +14,9 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
-from pathlib import Path
 from statistics import mean, median
 from string import Template
-from typing import Generator, NamedTuple, Type, Tuple, Any, Optional, Dict, Union
+from typing import Generator, Tuple, Any, Optional, Dict, Union
 
 from utils.args_parser import get_args_log_analyzer
 from utils.logging_utils import (
@@ -69,7 +68,7 @@ def search_last_log(conf: dict) -> Optional[LastLogData]:
             log_date = datetime.strptime(fn_match.group("date"), "%Y%m%d")
             ext = fn_match.group("ext")
 
-            current_file_info = LastLogData(str(Path(log_dir, file)), log_date, ext)
+            current_file_info = LastLogData(os.path.join(log_dir, file), log_date, ext)
             if res_file_info is None or res_file_info.date < current_file_info.date:
                 res_file_info = current_file_info
 
@@ -200,10 +199,10 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
     return report_data
 
 
-def get_report_path(report_date: datetime, conf: dict) -> Path:
+def get_report_path(report_date: datetime, conf: dict) -> str:
     """TODO"""
     report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
-    return Path(conf["REPORT_DIR"], report_fn)
+    return os.path.join(conf["REPORT_DIR"], report_fn)
 
 
 def create_report_file(

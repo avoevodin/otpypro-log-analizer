@@ -147,3 +147,6 @@ static/
 log/
 reports/
 generated_logs/
+cov-report/
+
+.tmp*
