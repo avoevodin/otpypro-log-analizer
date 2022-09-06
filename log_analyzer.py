@@ -120,13 +120,13 @@ def parse_log_data(
         line = line.replace('"', "")
         try:
             srch_result = re.search(
-                r"^.* (?P<url>/.+) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
+                r"^.* (?P<url>/.*) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
             )
             if srch_result:
                 url = str(srch_result.group("url"))
                 time = float(srch_result.group("time"))
             else:
-                raise Exception("Can't parse url and time from log string.")
+                raise ValueError(f"Can't parse url and time from log string:\n{line}")
         except Exception as e:
             logging_error(f"The error occurred while parsing file {filepath!r}: {e}")
             errors_cnt += 1
@@ -139,10 +139,9 @@ def parse_log_data(
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
+        errors_perc = round(errors_cnt / len(log_file_data) * 100, 2)
         errors_percentage_text = (
-            f" There were {errors_cnt/len(log_file_data)}% of errors."
-            if errors_cnt
-            else ""
+            f" There were ~{errors_perc}% of errors." if errors_perc else ""
         )
         logging_info(
             f"The file {filepath!r} has been parsed successfully.{errors_percentage_text}"
@@ -236,16 +235,14 @@ def main() -> None:
         parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)
-
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
         logging_error(f"Warning: {e}")
         sys.exit()
-    except FileExistsError as e:
-        logging_error(f"Warning: {e}")
-    except Exception as e:
+    except KeyboardInterrupt as e:
+        logging_exception(f"Process has been interrupted: {e}")
+    except BaseException as e:
         logging_exception(f"Error: {e}")
-        raise
 
 
 if __name__ == "__main__":
