@@ -13,6 +13,7 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from statistics import mean, median
 from string import Template
@@ -119,7 +120,6 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
 
         yield url, time
 
-    print(errors_cnt, errors_limit)
     if errors_cnt > errors_limit:
         raise ValueError(
             f"Too much errors has occurred while parsing file {filepath!r}"
@@ -173,12 +173,12 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
             {
                 "url": url,
                 "count": len(series),
-                "count_perc": len(series) / total_measurments,
-                "time_sum": time_sum,
-                "time_perc": time_sum / total_time_sum,
-                "time_avg": mean(series),
-                "time_max": max(series),
-                "time_med": median(series),
+                "count_perc": round(len(series) / total_measurments * 100, 3),
+                "time_sum": round(time_sum, 3),
+                "time_perc": round(time_sum / total_time_sum * 100, 3),
+                "time_avg": round(mean(series), 3),
+                "time_max": round(max(series), 3),
+                "time_med": round(median(series), 3),
             }
         )
     logging_info(f"Report data has been prepared successfully.")
@@ -188,6 +188,7 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
 def create_report_file(
     report_data: list[dict], report_date: datetime, conf: dict
 ) -> None:
+    """TODO"""
     report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
     with open(
         "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
@@ -213,7 +214,6 @@ def main() -> None:
         parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)
-        print(log_file_info)
 
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
