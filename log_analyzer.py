@@ -13,7 +13,6 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
 from statistics import mean, median
 from string import Template
