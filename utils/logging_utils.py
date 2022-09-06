@@ -6,7 +6,7 @@ import logging
 import socket
 
 
-def get_extra_data() -> dict[str]:
+def get_extra_data() -> dict:
     """TODO"""
     return {
         "clientip": socket.gethostbyname(socket.gethostname()),

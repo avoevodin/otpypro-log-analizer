@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from statistics import mean, median
 from string import Template
-from typing import Generator
+from typing import Generator, NamedTuple, Type, Tuple, Any, Optional, Dict, Union
 
 from utils.args_parser import get_args_log_analyzer
 from utils.logging_utils import (
@@ -30,13 +30,15 @@ from utils.logging_utils import (
 CONFIG_DEFAULT_PATH = "config.json"
 PARSE_ERROR_LIMIT = 0.2
 
-config = {
+config: Dict[str, Union[int, float, str]] = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./log",
     "DATA_ENCONDING": "UTF-8",
     "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
 }
+
+LastLogData = namedtuple("LastLogData", "path, date, ext")
 
 
 def get_config() -> dict:
@@ -52,24 +54,20 @@ def get_config() -> dict:
     return config
 
 
-def search_last_log(conf: dict) -> namedtuple:
+def search_last_log(conf: dict) -> Optional[LastLogData]:
     """TODO"""
-    log_dir = conf.get("LOG_DIR")
+    log_dir = str(conf.get("LOG_DIR"))
 
     if not os.path.isdir(log_dir):
         raise NotADirectoryError
 
-    LastLogData = namedtuple("LastLogData", "path, date, ext")
-
     res_file_info = None
 
     for file in os.listdir(log_dir):
-        if re.match(r"^[\w\-.]+\d{8}(.gz|)$", file):
-            log_date = datetime.strptime(re.search(r"\d{8}", file).group(0), "%Y%m%d")
-            ext_res = re.search(r"^.*\d{8}(\.\w+)$", file)
-            ext = ""
-            if ext_res:
-                ext = ext_res.group(1)
+        fn_match = re.match(r"^[\w\-.]+(?P<date>\d{8})(?P<ext>.gz|)$", file)
+        if fn_match:
+            log_date = datetime.strptime(fn_match.group("date"), "%Y%m%d")
+            ext = fn_match.group("ext")
 
             current_file_info = LastLogData(str(Path(log_dir, file)), log_date, ext)
             if res_file_info is None or res_file_info.date < current_file_info.date:
@@ -83,7 +81,7 @@ def search_last_log(conf: dict) -> namedtuple:
     return res_file_info
 
 
-def get_log_data(conf: dict) -> (namedtuple, list[str]):
+def get_log_data(conf: dict) -> Tuple[LastLogData, list[str]]:
     """TODO"""
     logging_info("Searching last log file...")
     log_file_info = search_last_log(conf)
@@ -109,7 +107,9 @@ def get_log_data(conf: dict) -> (namedtuple, list[str]):
     return log_file_info, f_lines
 
 
-def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str, bool):
+def parse_log_data(
+    log_file_data: list[str], filepath: str, conf: dict
+) -> Generator[Tuple[str, float], None, None]:
     """TODO"""
     logging_info(f"Start parsing log file ({filepath!r}) data...")
     errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
@@ -122,8 +122,11 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
             srch_result = re.search(
                 r"^.* (?P<url>/.+) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
             )
-            url = srch_result.group("url")
-            time = float(srch_result.group("time"))
+            if srch_result:
+                url = str(srch_result.group("url"))
+                time = float(srch_result.group("time"))
+            else:
+                raise Exception("Can't parse url and time from log string.")
         except Exception as e:
             logging_warning(f"The error occurred while parsing file {filepath!r}: {e}")
             errors_cnt += 1
@@ -149,15 +152,15 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
 def prepare_report_data(parsed_data: Generator) -> list[dict]:
     """TODO"""
     logging_info(f"Start preparing report data...")
-    urls_data = {}
+    urls_data_dict: Dict[str, Any] = {}
     total_time_sum = total_measurments = 0
     for url, time in parsed_data:
-        url_measurments = urls_data.get(url)
+        url_measurments = urls_data_dict.get(url)
         if url_measurments:
             url_measurments["series"].append(time)
             url_measurments["time_sum"] += time
         else:
-            urls_data[url] = {
+            urls_data_dict[url] = {
                 "series": [time],
                 "time_sum": time,
             }
@@ -171,11 +174,13 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
                 "series": data[1]["series"],
                 "time_sum": data[1]["time_sum"],
             },
-            urls_data.items(),
+            urls_data_dict.items(),
         )
     )
     urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
-    urls_data = urls_data[: config["REPORT_SIZE"]]
+    report_size: int = int(config["REPORT_SIZE"])
+    if report_size:
+        urls_data = urls_data[:report_size]
 
     report_data = []
     for url_data in urls_data:
@@ -206,6 +211,7 @@ def create_report_file(
     report_data: list[dict], report_date: datetime, conf: dict
 ) -> None:
     """TODO"""
+    logging_info("Start report file creating...")
     report_path = get_report_path(report_date, conf)
     with open(
         "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
@@ -216,6 +222,7 @@ def create_report_file(
                 table_json=json.dumps(report_data)
             )
             report.write(report_str)
+    logging_info(f"Finish report file {report_path!r} creating...")
 
 
 def main() -> None:

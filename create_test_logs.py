@@ -4,6 +4,7 @@ import os
 import random
 from argparse import Namespace
 from pathlib import Path
+from typing import List, Tuple, Any
 
 from faker import Faker
 
@@ -25,7 +26,7 @@ def clear_test_logs_dir() -> None:
     logging_info("Finish clearing logs directory.")
 
 
-def create_log_file(fn: str, ext: str, records: list) -> None:
+def create_log_file(fn: str, ext: str, records: List) -> None:
     """TODO"""
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
@@ -46,13 +47,13 @@ def create_log_file(fn: str, ext: str, records: list) -> None:
     logging_info(f"The file '{fn}{ext}' has been created successfully.")
 
 
-def generate_log_files(logs_data: list[tuple]) -> None:
+def generate_log_files(logs_data: List[Tuple[str, Any, List[str]]]) -> None:
     """TODO"""
     for fn, ext, records in logs_data:
         create_log_file(fn, ext, records)
 
 
-def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
+def generate_log_records(date: datetime.datetime, records_cnt: int) -> List[str]:
     """TODO"""
     records = []
     start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -97,7 +98,9 @@ def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
     return records
 
 
-def generate_logs_data(days_cnt: int, records_cnt: int) -> list[tuple]:
+def generate_logs_data(
+    days_cnt: int, records_cnt: int
+) -> List[Tuple[str, Any, List[str]]]:
     """TODO"""
     base = datetime.datetime.today()
     dates_list = [base - datetime.timedelta(days=x) for x in range(days_cnt)]
