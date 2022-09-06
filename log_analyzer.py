@@ -6,6 +6,7 @@ Log analyzer app.
 #                     '$status $body_bytes_sent "$http_referer" '
 #                     '"$http_user_agent" "$http_x_forwarded_for" "$http_X_REQUEST_ID" "$http_X_RB_USER" '
 #                     '$request_time';
+
 import gzip
 import json
 import os
@@ -51,14 +52,16 @@ def get_config() -> dict:
     return config
 
 
-def search_last_log(log_dir: str) -> namedtuple:
+def search_last_log(conf: dict) -> namedtuple:
     """TODO"""
+    log_dir = conf.get("LOG_DIR")
+
     if not os.path.isdir(log_dir):
         raise NotADirectoryError
 
     LastLogData = namedtuple("LastLogData", "path, date, ext")
 
-    res_file_data = None
+    res_file_info = None
 
     for file in os.listdir(log_dir):
         if re.match(r"^[\w\-.]+\d{8}(.gz|)$", file):
@@ -68,18 +71,27 @@ def search_last_log(log_dir: str) -> namedtuple:
             if ext_res:
                 ext = ext_res.group(1)
 
-            current_file_data = LastLogData(str(Path(log_dir, file)), log_date, ext)
-            if res_file_data is None or res_file_data.date < current_file_data.date:
-                res_file_data = current_file_data
+            current_file_info = LastLogData(str(Path(log_dir, file)), log_date, ext)
+            if res_file_info is None or res_file_info.date < current_file_info.date:
+                res_file_info = current_file_info
 
-    return res_file_data
+    if res_file_info:
+        report_path = get_report_path(res_file_info.date, conf)
+        if os.path.isfile(report_path):
+            raise FileExistsError(f"Report file already exists: {str(report_path)!r}")
+
+    return res_file_info
 
 
 def get_log_data(conf: dict) -> (namedtuple, list[str]):
     """TODO"""
     logging_info("Searching last log file...")
-    log_file_info = search_last_log(conf.get("LOG_DIR"))
-    logging_info(f"Log file {log_file_info.path!r} has been found successfully!")
+    log_file_info = search_last_log(conf)
+
+    if log_file_info:
+        logging_info(f"Log file {log_file_info.path!r} has been found successfully!")
+    else:
+        raise ValueError(f"Log file hasn't been found!")
 
     logging_info(f"Loading the log file {log_file_info.path!r}...")
     if log_file_info.ext:
@@ -184,17 +196,21 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
     return report_data
 
 
+def get_report_path(report_date: datetime, conf: dict) -> Path:
+    """TODO"""
+    report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
+    return Path(conf["REPORT_DIR"], report_fn)
+
+
 def create_report_file(
     report_data: list[dict], report_date: datetime, conf: dict
 ) -> None:
     """TODO"""
-    report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
+    report_path = get_report_path(report_date, conf)
     with open(
         "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
     ) as report_template:
-        with open(
-            Path(conf["REPORT_DIR"], report_fn), "w", encoding=conf["DATA_ENCONDING"]
-        ) as report:
+        with open(report_path, "w", encoding=conf["DATA_ENCONDING"]) as report:
             report_str_template = Template(report_template.read())
             report_str = report_str_template.safe_substitute(
                 table_json=json.dumps(report_data)
@@ -216,8 +232,10 @@ def main() -> None:
 
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
-        logging_exception(f"Error:\n{e}")
+        logging_warning(f"Warning: {e}")
         sys.exit()
+    except FileExistsError as e:
+        logging_warning(f"Warning: {e}")
     except Exception as e:
         logging_exception(f"Error: {e}")
         raise
