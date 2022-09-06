@@ -24,11 +24,6 @@ def logging_error(message: str) -> None:
     logging.error(message, extra=get_extra_data())
 
 
-def logging_warning(message: str) -> None:
-    """TODO"""
-    logging.warning(message, extra=get_extra_data())
-
-
 def logging_exception(message: str) -> None:
     """TODO"""
     logging.exception(message, extra=get_extra_data(), exc_info=True)

@@ -24,7 +24,7 @@ from utils.logging_utils import (
     logging_exception,
     setup_logging,
     logging_info,
-    logging_warning,
+    logging_error,
 )
 
 CONFIG_DEFAULT_PATH = "config.json"
@@ -128,7 +128,7 @@ def parse_log_data(
             else:
                 raise Exception("Can't parse url and time from log string.")
         except Exception as e:
-            logging_warning(f"The error occurred while parsing file {filepath!r}: {e}")
+            logging_error(f"The error occurred while parsing file {filepath!r}: {e}")
             errors_cnt += 1
             continue
 
@@ -222,7 +222,7 @@ def create_report_file(
                 table_json=json.dumps(report_data)
             )
             report.write(report_str)
-    logging_info(f"Finish report file {report_path!r} creating...")
+    logging_info(f"Finish report file {str(report_path)!r} creating...")
 
 
 def main() -> None:
@@ -239,10 +239,10 @@ def main() -> None:
 
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
-        logging_warning(f"Warning: {e}")
+        logging_error(f"Warning: {e}")
         sys.exit()
     except FileExistsError as e:
-        logging_warning(f"Warning: {e}")
+        logging_error(f"Warning: {e}")
     except Exception as e:
         logging_exception(f"Error: {e}")
         raise
