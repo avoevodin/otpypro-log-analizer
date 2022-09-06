@@ -1,15 +1,14 @@
 import datetime
 import gzip
-import logging
 import os
+import random
 from argparse import Namespace
 from pathlib import Path
-import random
 
 from faker import Faker
 
 from utils.args_parser import get_args_create_test_logs
-from utils.logging_utils import logging_info
+from utils.logging_utils import logging_info, setup_logging
 
 TEST_LOG_DIR = "generated_logs"
 LOG_ENC = "UTF-8"
@@ -18,7 +17,7 @@ GZ_EXT = ".gz"
 fake = Faker()
 
 
-def clear_test_logs_dir():
+def clear_test_logs_dir() -> None:
     """TODO"""
     logging_info("Start clearing logs directory.")
     for f in os.listdir(TEST_LOG_DIR):
@@ -26,7 +25,7 @@ def clear_test_logs_dir():
     logging_info("Finish clearing logs directory.")
 
 
-def create_log_file(fn: str, ext: str, records: list):
+def create_log_file(fn: str, ext: str, records: list) -> None:
     """TODO"""
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
@@ -47,7 +46,7 @@ def create_log_file(fn: str, ext: str, records: list):
     logging_info(f"The file '{fn}{ext}' has been created successfully.")
 
 
-def generate_log_files(logs_data: list[tuple]):
+def generate_log_files(logs_data: list[tuple]) -> None:
     """TODO"""
     for fn, ext, records in logs_data:
         create_log_file(fn, ext, records)
@@ -57,7 +56,7 @@ def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
     """TODO"""
     records = []
     start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
-    end_date = start_date + datetime.timedelta(1) - datetime.timedelta(microseconds=1)
+    end_date = start_date + datetime.timedelta(days=1, microseconds=-1)
     frm_str = (
         "{remote_addr} {remote_user}  {http_x_real_ip} [{time_local}] "
         '"{request}" {status} {body_bytes_sent} "{http_referer}" '
@@ -70,8 +69,9 @@ def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
             "remote_addr": fake.ipv4(),
             "remote_user": fake.hexify(text="^" * random.randint(8, 20)),
             "http_x_real_ip": "-",
-            "time_local": fake.date_time_between(
-                start_date=start_date, end_date=end_date
+            "time_local": datetime.datetime.strftime(
+                fake.date_time_between(start_date=start_date, end_date=end_date),
+                "%d/%b/%Y:%H:%M:%S +0300",
             ),
             "request": f"{fake.http_method()} /{fake.uri_path()} HTTP/1.1",
             "status": fake.random_element(elements=(200, 302, 404)),
@@ -122,7 +122,7 @@ def generate_logs_data(days_cnt: int, records_cnt: int) -> list[tuple]:
     return logs_data
 
 
-def create_logs(params: Namespace):
+def create_logs(params: Namespace) -> None:
     """TODO"""
     logging_info("Start logs generation...")
     clear_test_logs_dir()
@@ -133,13 +133,9 @@ def create_logs(params: Namespace):
     logging_info("Finish logs generation...")
 
 
-def main():
+def main() -> None:
     """TODO"""
-    logging.basicConfig(
-        format="%(asctime)s %(clientip)-15s %(user)-8s %(message)s",
-        datefmt="%Y.%m.%d %H:%M:%S",
-        level="INFO",
-    )
+    setup_logging({})
     args = get_args_create_test_logs()
     create_logs(args)
 

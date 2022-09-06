@@ -40,5 +40,18 @@ def get_args_create_test_logs() -> Namespace:
     return args
 
 
-if __name__ == "__main__":
-    get_args_create_test_logs()
+def get_args_log_analyzer(path_to_conf: str) -> Namespace:
+    """TODO"""
+    args_params = [
+        {
+            "names": ("--conf",),
+            "kwargs": {
+                "help": f"Path to the config file (default: {path_to_conf!r})",
+                "required": False,
+                "type": str,
+                "default": path_to_conf,
+            },
+        },
+    ]
+    args = get_parsed_args(args_params)
+    return args
