@@ -42,7 +42,12 @@ LastLogData = namedtuple("LastLogData", "path, date, ext")
 
 
 def get_config(conf: dict, params: Namespace) -> dict:
-    """TODO"""
+    """
+    Return dict with app configs, merged from const and the passed config file.
+    :param conf: app config
+    :param params: params passed through the cli
+    :return: dict with app configs
+    """
     path_to_conf = params.conf or CONFIG_DEFAULT_PATH
     with open(path_to_conf, "r") as f:
         config_from_file = json.load(f)
@@ -53,7 +58,11 @@ def get_config(conf: dict, params: Namespace) -> dict:
 
 
 def search_last_log(conf: dict) -> Optional[LastLogData]:
-    """TODO"""
+    """
+    Returns last by the date in filename matched log from the log dir.
+    :param conf: app configs
+    :return: named tuple (path_to_file, date_in_filename, file_extension)
+    """
     log_dir = str(conf.get("LOG_DIR"))
 
     if not os.path.isdir(log_dir):
@@ -80,7 +89,12 @@ def search_last_log(conf: dict) -> Optional[LastLogData]:
 
 
 def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
-    """TODO"""
+    """
+    Returns file info and the records of the log file.
+    :param conf: app config
+    :return: named tuple (path_to_file, date_in_filename, file_extension) and
+    list of the strings of log file records.
+    """
     logging_info("Searching last log file...")
     log_file_info = search_last_log(conf)
 
@@ -108,7 +122,13 @@ def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
 def parse_log_data(
     log_file_data: List[str], filepath: str, conf: dict
 ) -> Generator[Tuple[str, float], None, None]:
-    """TODO"""
+    """
+    Return parsed log file data.
+    :param log_file_data: log file data as list of the strings
+    :param filepath: path to log file
+    :param conf: app configs
+    :return: generator with url string and request time float number.
+    """
     logging_info(f"Start parsing log file ({filepath!r}) data...")
     errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
     errors_limit = len(log_file_data) * errors_limit
@@ -147,7 +167,11 @@ def parse_log_data(
 
 
 def prepare_report_data(parsed_data: Generator) -> List[dict]:
-    """TODO"""
+    """
+    Return data prepared for the report with passed log file data.
+    :param parsed_data: parsed log file data generator (url, request_time)
+    :return: list of a report lines.
+    """
     logging_info(f"Start preparing report data...")
     urls_data_dict: Dict[str, Any] = {}
     total_time_sum = total_measurments = 0
@@ -199,7 +223,12 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
 
 
 def get_report_path(report_date: datetime, conf: dict) -> str:
-    """TODO"""
+    """
+    Return report path based on the report date and the REPORT_DIR config.
+    :param report_date: date of current report
+    :param conf: app configs
+    :return: path to report file.
+    """
     report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
     return os.path.join(conf["REPORT_DIR"], report_fn)
 
@@ -207,7 +236,13 @@ def get_report_path(report_date: datetime, conf: dict) -> str:
 def create_report_file(
     report_data: List[dict], report_date: datetime, conf: dict
 ) -> None:
-    """TODO"""
+    """
+    Create report file with passed report data
+    :param report_data: list of dicts with the data of report lines
+    :param report_date: date of the report
+    :param conf: app configs
+    :return:
+    """
     logging_info("Start report file creating...")
     report_path = get_report_path(report_date, conf)
     with open(
@@ -223,7 +258,11 @@ def create_report_file(
 
 
 def main(init_config) -> None:
-    """TODO"""
+    """
+    Main method of the Log Analyzer.
+    :param init_config: app configs
+    :return:
+    """
     try:
         params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
         conf = get_config(init_config, params)
