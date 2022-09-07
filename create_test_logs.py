@@ -3,39 +3,47 @@ import gzip
 import os
 import random
 from argparse import Namespace
-from pathlib import Path
+from typing import Any, Dict, List, Tuple, Union
 
 from faker import Faker
 
+from log_analyzer import get_config
 from utils.args_parser import get_args_create_test_logs
 from utils.logging_utils import logging_info, setup_logging
 
-TEST_LOG_DIR = "generated_logs"
-LOG_ENC = "UTF-8"
 GZ_EXT = ".gz"
+CONFIG_DEFAULT_PATH = "config.json"
+
+config: Dict[str, Union[int, float, str]] = {
+    "LOG_DIR": "./generated_logs",
+    "DATA_ENCONDING": "UTF-8",
+}
 
 fake = Faker()
 
 
-def clear_test_logs_dir() -> None:
+def clear_test_logs_dir(conf) -> None:
     """TODO"""
+    log_dir = conf["LOG_DIR"]
     logging_info("Start clearing logs directory.")
-    for f in os.listdir(TEST_LOG_DIR):
-        os.remove(os.path.join(TEST_LOG_DIR, f))
+    for f in os.listdir(log_dir):
+        os.remove(os.path.join(log_dir, f))
     logging_info("Finish clearing logs directory.")
 
 
-def create_log_file(fn: str, ext: str, records: list) -> None:
+def create_log_file(fn: str, ext: str, records: List, conf: dict) -> None:
     """TODO"""
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
+    log_dir = conf["LOG_DIR"]
+    encoding = conf["DATA_ENCONDING"]
     logging_info(f"Start creating a file '{fn}'")
-    f_path = Path(TEST_LOG_DIR, fn)
-    with open(f_path, "w", encoding=LOG_ENC) as f:
+    f_path = os.path.join(log_dir, fn)
+    with open(f_path, "w", encoding=encoding) as f:
         f.writelines(records)
     if ext == GZ_EXT:
         logging_info(f"Start compressing the file {fn}")
-        f_gz_path = Path(TEST_LOG_DIR, f"{fn}{ext}")
+        f_gz_path = os.path.join(log_dir, f"{fn}{ext}")
         with open(f_path, "rb") as f, gzip.open(f_gz_path, "wb") as f_gz:
             f_gz.writelines(f)
         os.remove(f_path)
@@ -46,13 +54,13 @@ def create_log_file(fn: str, ext: str, records: list) -> None:
     logging_info(f"The file '{fn}{ext}' has been created successfully.")
 
 
-def generate_log_files(logs_data: list[tuple]) -> None:
+def generate_log_files(logs_data: List[Tuple[str, Any, List[str]]], conf: dict) -> None:
     """TODO"""
     for fn, ext, records in logs_data:
-        create_log_file(fn, ext, records)
+        create_log_file(fn, ext, records, conf)
 
 
-def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
+def generate_log_records(date: datetime.datetime, records_cnt: int) -> List[str]:
     """TODO"""
     records = []
     start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -97,7 +105,9 @@ def generate_log_records(date: datetime, records_cnt: int) -> list[str]:
     return records
 
 
-def generate_logs_data(days_cnt: int, records_cnt: int) -> list[tuple]:
+def generate_logs_data(
+    days_cnt: int, records_cnt: int
+) -> List[Tuple[str, Any, List[str]]]:
     """TODO"""
     base = datetime.datetime.today()
     dates_list = [base - datetime.timedelta(days=x) for x in range(days_cnt)]
@@ -122,23 +132,24 @@ def generate_logs_data(days_cnt: int, records_cnt: int) -> list[tuple]:
     return logs_data
 
 
-def create_logs(params: Namespace) -> None:
+def create_logs(conf, params: Namespace) -> None:
     """TODO"""
     logging_info("Start logs generation...")
-    clear_test_logs_dir()
+    clear_test_logs_dir(conf)
     cnt = int(params.cnt)
     records = int(params.records)
     logs_data = generate_logs_data(cnt, records)
-    generate_log_files(logs_data)
+    generate_log_files(logs_data, conf)
     logging_info("Finish logs generation...")
 
 
-def main() -> None:
+def main(init_config: Dict) -> None:
     """TODO"""
-    setup_logging({})
-    args = get_args_create_test_logs()
-    create_logs(args)
+    params = get_args_create_test_logs(CONFIG_DEFAULT_PATH)
+    conf = get_config(init_config, params)
+    setup_logging(conf)
+    create_logs(conf, params)
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__":  # pragma: no cover
+    main(config)

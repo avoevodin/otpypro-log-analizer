@@ -8,6 +8,8 @@ name = "pypi"
 [dev-packages]
 mypy = "*"
 faker = "*"
+coverage = "*"
+isort = "*"
 
 [requires]
 python_version = "3.10"

@@ -12,25 +12,21 @@ import json
 import os
 import re
 import sys
+from argparse import Namespace
 from collections import namedtuple
 from datetime import datetime
-from pathlib import Path
 from statistics import mean, median
 from string import Template
-from typing import Generator
+from typing import Any, Dict, Generator, Optional, Tuple, Union
 
 from utils.args_parser import get_args_log_analyzer
-from utils.logging_utils import (
-    logging_exception,
-    setup_logging,
-    logging_info,
-    logging_warning,
-)
+from utils.logging_utils import (logging_error, logging_exception,
+                                 logging_info, setup_logging)
 
 CONFIG_DEFAULT_PATH = "config.json"
 PARSE_ERROR_LIMIT = 0.2
 
-config = {
+config: Dict[str, Union[int, float, str]] = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./log",
@@ -38,40 +34,36 @@ config = {
     "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
 }
 
+LastLogData = namedtuple("LastLogData", "path, date, ext")
 
-def get_config() -> dict:
+
+def get_config(conf: dict, params: Namespace) -> dict:
     """TODO"""
-    params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
     path_to_conf = params.conf or CONFIG_DEFAULT_PATH
     with open(path_to_conf, "r") as f:
         config_from_file = json.load(f)
 
     for key, value in config_from_file.items():
-        config[key] = value
+        conf[key] = value
+    return conf
 
-    return config
 
-
-def search_last_log(conf: dict) -> namedtuple:
+def search_last_log(conf: dict) -> Optional[LastLogData]:
     """TODO"""
-    log_dir = conf.get("LOG_DIR")
+    log_dir = str(conf.get("LOG_DIR"))
 
     if not os.path.isdir(log_dir):
         raise NotADirectoryError
 
-    LastLogData = namedtuple("LastLogData", "path, date, ext")
-
     res_file_info = None
 
     for file in os.listdir(log_dir):
-        if re.match(r"^[\w\-.]+\d{8}(.gz|)$", file):
-            log_date = datetime.strptime(re.search(r"\d{8}", file).group(0), "%Y%m%d")
-            ext_res = re.search(r"^.*\d{8}(\.\w+)$", file)
-            ext = ""
-            if ext_res:
-                ext = ext_res.group(1)
+        fn_match = re.match(r"^[\w\-.]+(?P<date>\d{8})(?P<ext>.gz|)$", file)
+        if fn_match:
+            log_date = datetime.strptime(fn_match.group("date"), "%Y%m%d")
+            ext = fn_match.group("ext")
 
-            current_file_info = LastLogData(str(Path(log_dir, file)), log_date, ext)
+            current_file_info = LastLogData(os.path.join(log_dir, file), log_date, ext)
             if res_file_info is None or res_file_info.date < current_file_info.date:
                 res_file_info = current_file_info
 
@@ -83,7 +75,7 @@ def search_last_log(conf: dict) -> namedtuple:
     return res_file_info
 
 
-def get_log_data(conf: dict) -> (namedtuple, list[str]):
+def get_log_data(conf: dict) -> Tuple[LastLogData, list[str]]:
     """TODO"""
     logging_info("Searching last log file...")
     log_file_info = search_last_log(conf)
@@ -109,7 +101,9 @@ def get_log_data(conf: dict) -> (namedtuple, list[str]):
     return log_file_info, f_lines
 
 
-def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str, bool):
+def parse_log_data(
+    log_file_data: list[str], filepath: str, conf: dict
+) -> Generator[Tuple[str, float], None, None]:
     """TODO"""
     logging_info(f"Start parsing log file ({filepath!r}) data...")
     errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
@@ -120,12 +114,15 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
         line = line.replace('"', "")
         try:
             srch_result = re.search(
-                r"^.* (?P<url>/.+) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
+                r"^.* (?P<url>/.*) HTTP/1.\d \d{3}.* (?P<time>\d+.\d+)$", line
             )
-            url = srch_result.group("url")
-            time = float(srch_result.group("time"))
+            if srch_result:
+                url = str(srch_result.group("url"))
+                time = float(srch_result.group("time"))
+            else:
+                raise ValueError(f"Can't parse url and time from log string:\n{line}")
         except Exception as e:
-            logging_warning(f"The error occurred while parsing file {filepath!r}: {e}")
+            logging_error(f"The error occurred while parsing file {filepath!r}: {e}")
             errors_cnt += 1
             continue
 
@@ -136,10 +133,9 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
+        errors_perc = round(errors_cnt / len(log_file_data) * 100, 2)
         errors_percentage_text = (
-            f" There were {errors_cnt/len(log_file_data)}% of errors."
-            if errors_cnt
-            else ""
+            f" There were ~{errors_perc}% of errors." if errors_perc else ""
         )
         logging_info(
             f"The file {filepath!r} has been parsed successfully.{errors_percentage_text}"
@@ -149,15 +145,15 @@ def parse_log_data(log_file_data: list[str], filepath: str, conf: dict) -> (str,
 def prepare_report_data(parsed_data: Generator) -> list[dict]:
     """TODO"""
     logging_info(f"Start preparing report data...")
-    urls_data = {}
+    urls_data_dict: Dict[str, Any] = {}
     total_time_sum = total_measurments = 0
     for url, time in parsed_data:
-        url_measurments = urls_data.get(url)
+        url_measurments = urls_data_dict.get(url)
         if url_measurments:
             url_measurments["series"].append(time)
             url_measurments["time_sum"] += time
         else:
-            urls_data[url] = {
+            urls_data_dict[url] = {
                 "series": [time],
                 "time_sum": time,
             }
@@ -171,11 +167,13 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
                 "series": data[1]["series"],
                 "time_sum": data[1]["time_sum"],
             },
-            urls_data.items(),
+            urls_data_dict.items(),
         )
     )
     urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
-    urls_data = urls_data[: config["REPORT_SIZE"]]
+    report_size: int = int(config["REPORT_SIZE"])
+    if report_size:
+        urls_data = urls_data[:report_size]
 
     report_data = []
     for url_data in urls_data:
@@ -196,16 +194,17 @@ def prepare_report_data(parsed_data: Generator) -> list[dict]:
     return report_data
 
 
-def get_report_path(report_date: datetime, conf: dict) -> Path:
+def get_report_path(report_date: datetime, conf: dict) -> str:
     """TODO"""
     report_fn = f"report-{datetime.strftime(report_date, '%Y.%m.%d')}.html"
-    return Path(conf["REPORT_DIR"], report_fn)
+    return os.path.join(conf["REPORT_DIR"], report_fn)
 
 
 def create_report_file(
     report_data: list[dict], report_date: datetime, conf: dict
 ) -> None:
     """TODO"""
+    logging_info("Start report file creating...")
     report_path = get_report_path(report_date, conf)
     with open(
         "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
@@ -216,12 +215,14 @@ def create_report_file(
                 table_json=json.dumps(report_data)
             )
             report.write(report_str)
+    logging_info(f"Finish report file {str(report_path)!r} creating...")
 
 
-def main() -> None:
+def main(init_config) -> None:
     """TODO"""
     try:
-        conf = get_config()
+        params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
+        conf = get_config(init_config, params)
         setup_logging(conf)
 
         logging_info("Log analyzer has been started...")
@@ -229,17 +230,15 @@ def main() -> None:
         parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)
-
         logging_info("Log analyzer has been successfully finished...")
     except ValueError as e:
-        logging_warning(f"Warning: {e}")
+        logging_error(f"Warning: {e}")
         sys.exit()
-    except FileExistsError as e:
-        logging_warning(f"Warning: {e}")
-    except Exception as e:
+    except KeyboardInterrupt as e:
+        logging_exception(f"Process has been interrupted: {e}")
+    except BaseException as e:
         logging_exception(f"Error: {e}")
-        raise
 
 
 if __name__ == "__main__":
-    main()
+    main(config)

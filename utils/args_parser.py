@@ -16,7 +16,7 @@ def get_parsed_args(params: list) -> Namespace:
     return parser.parse_args()
 
 
-def get_args_create_test_logs() -> Namespace:
+def get_args_create_test_logs(path_to_conf: str) -> Namespace:
     """TODO"""
     args_params = [
         {
@@ -33,6 +33,15 @@ def get_args_create_test_logs() -> Namespace:
                 "help": "Log files quantity",
                 "required": True,
                 "type": int,
+            },
+        },
+        {
+            "names": ("--conf",),
+            "kwargs": {
+                "help": f"Path to the config file (default: {path_to_conf!r})",
+                "required": False,
+                "type": str,
+                "default": path_to_conf,
             },
         },
     ]
