@@ -42,4 +42,4 @@ jobs:
         pipenv run mypy .
     - name: Check if coverage under 95
       run: |
-        pipenv run coverage report --fail-under=95
+        pipenv run coverage report --omit=tests.py --fail-under=95
