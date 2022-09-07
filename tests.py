@@ -20,6 +20,7 @@ from log_analyzer import (
     get_config,
     get_log_data,
     get_report_path,
+    search_log_file,
 )
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
@@ -257,13 +258,15 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
-        log_file_info, f_lines = get_log_data(self.conf)
+        log_file_info = search_log_file(self.conf)
+        log_file_data = get_log_data(log_file_info, self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
         self.assertEqual(log_file_info.path, log_file_info_fixture.path)
         self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
-        self.assertEqual(f_lines, res_fixture)
+        for line, fixt_line in zip(log_file_data, res_fixture):
+            self.assertEqual(line, fixt_line)
 
     def test_get_log_data_gzip(self) -> None:
         """
@@ -271,20 +274,22 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir, ".gz")
-        log_file_info, f_lines = get_log_data(self.conf)
+        log_file_info = search_log_file(self.conf)
+        log_file_data = get_log_data(log_file_info, self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
         self.assertEqual(log_file_info.path, log_file_info_fixture.path)
         self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
-        self.assertEqual(f_lines, res_fixture)
+        for line, fixt_line in zip(log_file_data, res_fixture):
+            self.assertEqual(line, fixt_line)
 
     def test_get_log_data_no_log_data(self) -> None:
         """
         Test getting log data with no log files.
         :return:
         """
-        self.assertRaises(FileExistsError, get_log_data, self.conf)
+        self.assertRaises(FileExistsError, search_log_file, self.conf)
 
     def test_parse_log_data(self) -> None:
         """
@@ -292,7 +297,7 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_text, result_fixture, _ = get_log_file_text_fixture()
-        records = log_text.split("\n")
+        records = (line for line in log_text.split("\n"))
 
         result_gen = parse_log_data(records, "test_file_path", self.conf)
         result = {}
@@ -306,7 +311,7 @@ class TestLogAnalyzer(TestCase):
         Test parsing not valid log file data.
         :return:
         """
-        records = get_str_list_fixture()
+        records = (line for line in get_str_list_fixture())
         res_gen = parse_log_data(records, "test_file_path", self.conf)
         self.assertRaises(ValueError, next, res_gen)
 
@@ -316,7 +321,7 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_text, _, report_data_fxt = get_log_file_text_fixture()
-        records = log_text.split("\n")
+        records = (line for line in log_text.split("\n"))
         parsed_data = parse_log_data(records, "test_file_path", self.conf)
         report_data = prepare_report_data(parsed_data)
         self.assertEqual(report_data, report_data_fxt)
