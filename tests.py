@@ -37,7 +37,7 @@ def get_str_list_fixture() -> List[str]:
     return list(map(lambda e: f"{e}\n", TEST_STR.split("\n")[:-1]))
 
 
-def get_log_file_text_fixture() -> Tuple[str, dict, list[dict]]:
+def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
     """TODO"""
     log_text = (
         '1.196.116.32 -  - [29/Jun/2017:03:50:22 +0300] "GET /api/v2/banner/25019354 HTTP/1.1" 200 927 "-" '
