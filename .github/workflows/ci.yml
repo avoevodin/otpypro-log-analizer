@@ -33,7 +33,7 @@ jobs:
     - name: Test with unittest
       run: |
         pipenv run coverage run --source='.' tests.py -v
-        pipenv run coverage xml -o coverage.xml
+        pipenv run coverage xml -o coverage.xml --omit="tests.py"
     - name: Check with isort
       run: |
         pipenv run isort . --profile black
