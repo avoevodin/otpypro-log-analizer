@@ -14,8 +14,13 @@ from unittest import TestCase, mock
 
 from create_test_logs import create_log_file
 from create_test_logs import main as create_test_logs_main
-from log_analyzer import (PARSE_ERROR_LIMIT, LastLogData, get_config,
-                          get_log_data, get_report_path)
+from log_analyzer import (
+    PARSE_ERROR_LIMIT,
+    LastLogData,
+    get_config,
+    get_log_data,
+    get_report_path,
+)
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
 
@@ -32,7 +37,7 @@ def get_str_list_fixture() -> List[str]:
     return list(map(lambda e: f"{e}\n", TEST_STR.split("\n")[:-1]))
 
 
-def get_log_file_text_fixture() -> Tuple[str, dict, list[dict]]:
+def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
     """TODO"""
     log_text = (
         '1.196.116.32 -  - [29/Jun/2017:03:50:22 +0300] "GET /api/v2/banner/25019354 HTTP/1.1" 200 927 "-" '
@@ -177,7 +182,7 @@ class TestLogAnalyzer(TestCase):
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
-        self.encoding = self.config["DATA_ENCONDING"]
+        self.encoding = str(self.config["DATA_ENCONDING"])
         create_config_file(self.config_file_path, self.encoding)
 
         self.conf = get_config(

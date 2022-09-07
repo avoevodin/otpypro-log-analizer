@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# This workflows will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
 name: CI
@@ -32,18 +32,14 @@ jobs:
         pipenv install --dev
     - name: Test with unittest
       run: |
-        cd myshop
-        coverage run --source='.' unittest tests.py --verbosity=2
-        coverage xml -o coverage.xml
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
-        verbose: true
+        pipenv run coverage run --source='.' tests.py -v
+        pipenv run coverage xml -o coverage.xml
+    - name: Check with isort
+      run: |
+        pipenv run isort . --profile black
+    - name: Check with mypy
+      run: |
+        pipenv run mypy .
     - name: Check if coverage under 95
       run: |
-        coverage report --fail-under=95
+        pipenv run coverage report --fail-under=95
