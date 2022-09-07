@@ -28,7 +28,7 @@ from log_analyzer import parse_log_data, prepare_report_data, search_last_log
 TEST_STR = "test str\n" * 4
 
 
-def remove_tmpdir(dir_name: str) -> None:
+def remove_tmpdir(dir_name: str) -> None:  # pragma: no cover
     """
     Delete temp dir with dir_name.
     :param dir_name: dir name.
@@ -37,7 +37,7 @@ def remove_tmpdir(dir_name: str) -> None:
     shutil.rmtree(dir_name)
 
 
-def get_str_list_fixture() -> List[str]:
+def get_str_list_fixture() -> List[str]:  # pragma: no cover
     """
     Returns list of TEST_STR text lines.
     :return: list of test text lines.
@@ -45,7 +45,7 @@ def get_str_list_fixture() -> List[str]:
     return list(map(lambda e: f"{e}\n", TEST_STR.split("\n")[:-1]))
 
 
-def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
+def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:  # pragma: no cover
     """
     Returns fixtures of the test log file.
     :return: tuple with (log_text, parse_result_dict, list_of_report_data_dict)
@@ -128,7 +128,7 @@ def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
     return log_text, parse_result_fixture, report_data_fixture
 
 
-def create_config_file(filepath: str, encoding: str) -> None:
+def create_config_file(filepath: str, encoding: str) -> None:  # pragma: no cover
     """
     Create test config json file.
     :param filepath: path to config file
@@ -146,7 +146,9 @@ def create_config_file(filepath: str, encoding: str) -> None:
         json.dump(config_json, f)
 
 
-def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
+def generate_log_files(
+    conf: dict, log_dir: str, ext: str = ""
+) -> LastLogData:  # pragma: no cover
     """
     Generate some dummy log files with passed params.
     :param conf: app config
@@ -178,7 +180,9 @@ def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
     )
 
 
-def generate_report(conf: dict, encoding: str, log_file_info: LastLogData) -> None:
+def generate_report(
+    conf: dict, encoding: str, log_file_info: LastLogData
+) -> None:  # pragma: no cover
     """
     Generate fake report.
     :param conf: app config
@@ -192,7 +196,7 @@ def generate_report(conf: dict, encoding: str, log_file_info: LastLogData) -> No
         f.write(TEST_STR)
 
 
-class TestLogAnalyzer(TestCase):
+class TestLogAnalyzer(TestCase):  # pragma: no cover
     def setUp(self) -> None:
         """
         Setup method for Log Analyzer test class.
