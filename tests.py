@@ -14,8 +14,13 @@ from unittest import TestCase, mock
 
 from create_test_logs import create_log_file
 from create_test_logs import main as create_test_logs_main
-from log_analyzer import (PARSE_ERROR_LIMIT, LastLogData, get_config,
-                          get_log_data, get_report_path)
+from log_analyzer import (
+    PARSE_ERROR_LIMIT,
+    LastLogData,
+    get_config,
+    get_log_data,
+    get_report_path,
+)
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
 
