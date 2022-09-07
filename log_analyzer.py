@@ -12,19 +12,16 @@ import json
 import os
 import re
 import sys
+from argparse import Namespace
 from collections import namedtuple
 from datetime import datetime
 from statistics import mean, median
 from string import Template
-from typing import Generator, Tuple, Any, Optional, Dict, Union
+from typing import Any, Dict, Generator, Optional, Tuple, Union
 
 from utils.args_parser import get_args_log_analyzer
-from utils.logging_utils import (
-    logging_exception,
-    setup_logging,
-    logging_info,
-    logging_error,
-)
+from utils.logging_utils import (logging_error, logging_exception,
+                                 logging_info, setup_logging)
 
 CONFIG_DEFAULT_PATH = "config.json"
 PARSE_ERROR_LIMIT = 0.2
@@ -40,17 +37,15 @@ config: Dict[str, Union[int, float, str]] = {
 LastLogData = namedtuple("LastLogData", "path, date, ext")
 
 
-def get_config() -> dict:
+def get_config(conf: dict, params: Namespace) -> dict:
     """TODO"""
-    params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
     path_to_conf = params.conf or CONFIG_DEFAULT_PATH
     with open(path_to_conf, "r") as f:
         config_from_file = json.load(f)
 
     for key, value in config_from_file.items():
-        config[key] = value
-
-    return config
+        conf[key] = value
+    return conf
 
 
 def search_last_log(conf: dict) -> Optional[LastLogData]:
@@ -223,10 +218,11 @@ def create_report_file(
     logging_info(f"Finish report file {str(report_path)!r} creating...")
 
 
-def main() -> None:
+def main(init_config) -> None:
     """TODO"""
     try:
-        conf = get_config()
+        params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
+        conf = get_config(init_config, params)
         setup_logging(conf)
 
         logging_info("Log analyzer has been started...")
@@ -245,4 +241,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(config)
