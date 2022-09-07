@@ -195,16 +195,14 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
         total_time_sum += time
         total_measurments += 1
 
-    urls_data = list(
-        map(
-            lambda data: {
-                "url": data[0],
-                "series": data[1]["series"],
-                "time_sum": data[1]["time_sum"],
-            },
-            urls_data_dict.items(),
-        )
-    )
+    urls_data = [
+        {
+            "url": data[0],
+            "series": data[1]["series"],
+            "time_sum": data[1]["time_sum"],
+        }
+        for data in urls_data_dict.items()
+    ]
     urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
     report_size: int = int(config["REPORT_SIZE"])
     if report_size:
