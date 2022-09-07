@@ -30,6 +30,7 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pipenv
         pipenv install --dev
+        pipenv shell
     - name: Test with unittest
       run: |
         coverage run --source='.' unittest tests.py --verbosity=2
