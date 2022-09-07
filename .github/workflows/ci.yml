@@ -32,7 +32,6 @@ jobs:
         pipenv install --dev
     - name: Test with unittest
       run: |
-        cd myshop
         coverage run --source='.' unittest tests.py --verbosity=2
         coverage xml -o coverage.xml
     - name: Upload coverage to Codecov
