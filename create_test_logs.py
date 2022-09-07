@@ -22,8 +22,12 @@ config: Dict[str, Union[int, float, str]] = {
 fake = Faker()
 
 
-def clear_test_logs_dir(conf) -> None:
-    """TODO"""
+def clear_test_logs_dir(conf: dict) -> None:
+    """
+    Clear log dir specified at LOG_DIR setting.
+    :param conf: app configs
+    :return:
+    """
     log_dir = conf["LOG_DIR"]
     logging_info("Start clearing logs directory.")
     for f in os.listdir(log_dir):
@@ -32,7 +36,14 @@ def clear_test_logs_dir(conf) -> None:
 
 
 def create_log_file(fn: str, ext: str, records: List, conf: dict) -> None:
-    """TODO"""
+    """
+    Create the log file with passed params.
+    :param fn: filename
+    :param ext: extension of the log file
+    :param records: records of the log file
+    :param conf: app configs
+    :return:
+    """
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
     log_dir = conf["LOG_DIR"]
@@ -55,13 +66,23 @@ def create_log_file(fn: str, ext: str, records: List, conf: dict) -> None:
 
 
 def generate_log_files(logs_data: List[Tuple[str, Any, List[str]]], conf: dict) -> None:
-    """TODO"""
+    """
+    Generating log files with passed data.
+    :param logs_data: log files data
+    :param conf: app config
+    :return:
+    """
     for fn, ext, records in logs_data:
         create_log_file(fn, ext, records, conf)
 
 
 def generate_log_records(date: datetime.datetime, records_cnt: int) -> List[str]:
-    """TODO"""
+    """
+    Generate random records for the log file.
+    :param date: date of the log file
+    :param records_cnt: amount of log records in the file
+    :return: list of generated records.
+    """
     records = []
     start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
     end_date = start_date + datetime.timedelta(days=1, microseconds=-1)
@@ -107,8 +128,13 @@ def generate_log_records(date: datetime.datetime, records_cnt: int) -> List[str]
 
 def generate_logs_data(
     days_cnt: int, records_cnt: int
-) -> List[Tuple[str, Any, List[str]]]:
-    """TODO"""
+) -> List[Tuple[str, str, List[str]]]:
+    """
+    Generate random log files data with passed params.
+    :param days_cnt: amount of days should be covered with logs
+    :param records_cnt: amount of records in each log file.
+    :return: list with tuples (filename, file_extension, log_records)
+    """
     base = datetime.datetime.today()
     dates_list = [base - datetime.timedelta(days=x) for x in range(days_cnt)]
     names = map(
@@ -124,7 +150,7 @@ def generate_logs_data(
         logs_data.append(
             (
                 name,
-                fake.random_element(elements=(".gz", "", ".bz2", ".tar")),
+                str(fake.random_element(elements=(".gz", "", ".bz2", ".tar"))),
                 records,
             )
         )
@@ -133,7 +159,13 @@ def generate_logs_data(
 
 
 def create_logs(conf, params: Namespace) -> None:
-    """TODO"""
+    """
+    Creates random log files.
+    :param conf: app config
+    :param params: namespace with amount of the log files, and amount
+    of records in each log file.
+    :return:
+    """
     logging_info("Start logs generation...")
     clear_test_logs_dir(conf)
     cnt = int(params.cnt)
@@ -144,7 +176,11 @@ def create_logs(conf, params: Namespace) -> None:
 
 
 def main(init_config: Dict) -> None:
-    """TODO"""
+    """
+    Main method of random logs generation app.
+    :param init_config: app config
+    :return:
+    """
     params = get_args_create_test_logs(CONFIG_DEFAULT_PATH)
     conf = get_config(init_config, params)
     setup_logging(conf)
