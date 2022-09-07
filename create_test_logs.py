@@ -3,7 +3,6 @@ import gzip
 import os
 import random
 from argparse import Namespace
-from pathlib import Path
 from typing import List, Tuple, Any
 
 from faker import Faker
@@ -11,7 +10,8 @@ from faker import Faker
 from utils.args_parser import get_args_create_test_logs
 from utils.logging_utils import logging_info, setup_logging
 
-TEST_LOG_DIR = "generated_logs"
+TEST_LOG_DIR = os.getenv("TEST_LOG_DIR") or "generated_logs"
+
 LOG_ENC = "UTF-8"
 GZ_EXT = ".gz"
 
@@ -31,12 +31,12 @@ def create_log_file(fn: str, ext: str, records: List) -> None:
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
     logging_info(f"Start creating a file '{fn}'")
-    f_path = Path(TEST_LOG_DIR, fn)
+    f_path = os.path.join(TEST_LOG_DIR, fn)
     with open(f_path, "w", encoding=LOG_ENC) as f:
         f.writelines(records)
     if ext == GZ_EXT:
         logging_info(f"Start compressing the file {fn}")
-        f_gz_path = Path(TEST_LOG_DIR, f"{fn}{ext}")
+        f_gz_path = os.path.join(TEST_LOG_DIR, f"{fn}{ext}")
         with open(f_path, "rb") as f, gzip.open(f_gz_path, "wb") as f_gz:
             f_gz.writelines(f)
         os.remove(f_path)
