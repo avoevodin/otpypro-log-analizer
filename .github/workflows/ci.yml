@@ -34,15 +34,12 @@ jobs:
       run: |
         pipenv run coverage run --source='.' tests.py -v
         pipenv run coverage xml -o coverage.xml
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: true
-        verbose: true
+    - name: Check with isort
+      run: |
+        pipenv run isort . --profile black
+    - name: Check with mypy
+      run: |
+        pipenv run mypy .
     - name: Check if coverage under 95
       run: |
         pipenv run coverage report --fail-under=95

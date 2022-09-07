@@ -182,7 +182,7 @@ class TestLogAnalyzer(TestCase):
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
-        self.encoding = self.config["DATA_ENCONDING"]
+        self.encoding = str(self.config["DATA_ENCONDING"])
         create_config_file(self.config_file_path, self.encoding)
 
         self.conf = get_config(
