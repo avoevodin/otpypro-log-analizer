@@ -20,8 +20,12 @@ from string import Template
 from typing import Any, Dict, Generator, Optional, Tuple, Union
 
 from utils.args_parser import get_args_log_analyzer
-from utils.logging_utils import (logging_error, logging_exception,
-                                 logging_info, setup_logging)
+from utils.logging_utils import (
+    logging_error,
+    logging_exception,
+    logging_info,
+    setup_logging,
+)
 
 CONFIG_DEFAULT_PATH = "config.json"
 PARSE_ERROR_LIMIT = 0.2
@@ -240,5 +244,5 @@ def main(init_config) -> None:
         logging_exception(f"Error: {e}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main(config)
