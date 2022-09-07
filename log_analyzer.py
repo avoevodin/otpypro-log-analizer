@@ -17,7 +17,7 @@ from collections import namedtuple
 from datetime import datetime
 from statistics import mean, median
 from string import Template
-from typing import Any, Dict, Generator, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Optional, Tuple, Union, List
 
 from utils.args_parser import get_args_log_analyzer
 from utils.logging_utils import (
@@ -79,7 +79,7 @@ def search_last_log(conf: dict) -> Optional[LastLogData]:
     return res_file_info
 
 
-def get_log_data(conf: dict) -> Tuple[LastLogData, list[str]]:
+def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
     """TODO"""
     logging_info("Searching last log file...")
     log_file_info = search_last_log(conf)
@@ -106,7 +106,7 @@ def get_log_data(conf: dict) -> Tuple[LastLogData, list[str]]:
 
 
 def parse_log_data(
-    log_file_data: list[str], filepath: str, conf: dict
+    log_file_data: List[str], filepath: str, conf: dict
 ) -> Generator[Tuple[str, float], None, None]:
     """TODO"""
     logging_info(f"Start parsing log file ({filepath!r}) data...")
@@ -146,7 +146,7 @@ def parse_log_data(
         )
 
 
-def prepare_report_data(parsed_data: Generator) -> list[dict]:
+def prepare_report_data(parsed_data: Generator) -> List[dict]:
     """TODO"""
     logging_info(f"Start preparing report data...")
     urls_data_dict: Dict[str, Any] = {}
@@ -205,7 +205,7 @@ def get_report_path(report_date: datetime, conf: dict) -> str:
 
 
 def create_report_file(
-    report_data: list[dict], report_date: datetime, conf: dict
+    report_data: List[dict], report_date: datetime, conf: dict
 ) -> None:
     """TODO"""
     logging_info("Start report file creating...")
