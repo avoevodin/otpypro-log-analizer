@@ -88,12 +88,11 @@ def search_last_log(conf: dict) -> Optional[LastLogData]:
     return res_file_info
 
 
-def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
+def search_log_file(conf) -> LastLogData:
     """
-    Returns file info and the records of the log file.
-    :param conf: app config
-    :return: named tuple (path_to_file, date_in_filename, file_extension) and
-    list of the strings of log file records.
+    Returns last log file by date in the name of log.
+    :param conf: app configs
+    :return: named tuple (path_to_file, date_in_filename, file_extension)
     """
     logging_info("Searching last log file...")
     log_file_info = search_last_log(conf)
@@ -103,38 +102,45 @@ def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
     else:
         raise FileExistsError(f"Log file hasn't been found!")
 
+    return log_file_info
+
+
+def get_log_data(log_file_info: LastLogData, conf: dict) -> Generator[str, None, None]:
+    """
+    Returns records of the log file.
+    :param log_file_info: named tuple (path_to_file, date_in_filename, file_extension)
+    :param conf: app config
+    :return: generator for strings of log file records
+    """
     logging_info(f"Loading the log file {log_file_info.path!r}...")
     if log_file_info.ext:
         with gzip.open(log_file_info.path, "rb") as fb:
-            f_lines = list(
-                map(
-                    lambda line: line.decode(encoding=conf["DATA_ENCODING"]),
-                    fb.readlines(),
-                )
-            )
+            for line in fb:
+                yield line.decode(encoding=conf["DATA_ENCODING"])
     else:
         with open(log_file_info.path, "r", encoding=conf["DATA_ENCODING"]) as f:
-            f_lines = f.readlines()
+            for line in f:
+                yield line
     logging_info(f"The file {log_file_info.path!r} has been successfully loaded!")
-    return log_file_info, f_lines
 
 
 def parse_log_data(
-    log_file_data: List[str], filepath: str, conf: dict
+    log_file_data: Generator[str, None, None], filepath: str, conf: dict
 ) -> Generator[Tuple[str, float], None, None]:
     """
     Return parsed log file data.
-    :param log_file_data: log file data as list of the strings
+    :param log_file_data: log file data by lines generator
     :param filepath: path to log file
     :param conf: app configs
     :return: generator with url string and request time float number.
     """
     logging_info(f"Start parsing log file ({filepath!r}) data...")
     errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
-    errors_limit = len(log_file_data) * errors_limit
+    total_lines_cnt = 0
     errors_cnt = 0
 
     for line in log_file_data:
+        total_lines_cnt += 1
         line = line.replace('"', "")
         try:
             srch_result = re.search(
@@ -152,12 +158,13 @@ def parse_log_data(
 
         yield url, time
 
+    errors_limit = total_lines_cnt * errors_limit
     if errors_cnt > errors_limit:
         raise ValueError(
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
-        errors_perc = round(errors_cnt / len(log_file_data) * 100, 2)
+        errors_perc = round(errors_cnt / total_lines_cnt * 100, 2)
         errors_percentage_text = (
             f" There were ~{errors_perc}% of errors." if errors_perc else ""
         )
@@ -188,18 +195,16 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
         total_time_sum += time
         total_measurments += 1
 
-    urls_data = list(
-        map(
-            lambda data: {
-                "url": data[0],
-                "series": data[1]["series"],
-                "time_sum": data[1]["time_sum"],
-            },
-            urls_data_dict.items(),
-        )
-    )
+    urls_data = [
+        {
+            "url": data[0],
+            "series": data[1]["series"],
+            "time_sum": data[1]["time_sum"],
+        }
+        for data in urls_data_dict.items()
+    ]
     urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
-    report_size: int = int(config["REPORT_SIZE"])
+    report_size = int(config["REPORT_SIZE"])
     if report_size:
         urls_data = urls_data[:report_size]
 
@@ -269,7 +274,8 @@ def main(init_config) -> None:
         setup_logging(conf)
 
         logging_info("Log analyzer has been started...")
-        log_file_info, log_file_data = get_log_data(conf)
+        log_file_info = search_log_file(conf)
+        log_file_data = get_log_data(log_file_info, conf)
         parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)

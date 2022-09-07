@@ -20,6 +20,7 @@ from log_analyzer import (
     get_config,
     get_log_data,
     get_report_path,
+    search_log_file,
 )
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
@@ -27,7 +28,7 @@ from log_analyzer import parse_log_data, prepare_report_data, search_last_log
 TEST_STR = "test str\n" * 4
 
 
-def remove_tmpdir(dir_name: str) -> None:
+def remove_tmpdir(dir_name: str) -> None:  # pragma: no cover
     """
     Delete temp dir with dir_name.
     :param dir_name: dir name.
@@ -36,7 +37,7 @@ def remove_tmpdir(dir_name: str) -> None:
     shutil.rmtree(dir_name)
 
 
-def get_str_list_fixture() -> List[str]:
+def get_str_list_fixture() -> List[str]:  # pragma: no cover
     """
     Returns list of TEST_STR text lines.
     :return: list of test text lines.
@@ -44,7 +45,7 @@ def get_str_list_fixture() -> List[str]:
     return list(map(lambda e: f"{e}\n", TEST_STR.split("\n")[:-1]))
 
 
-def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
+def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:  # pragma: no cover
     """
     Returns fixtures of the test log file.
     :return: tuple with (log_text, parse_result_dict, list_of_report_data_dict)
@@ -127,7 +128,7 @@ def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
     return log_text, parse_result_fixture, report_data_fixture
 
 
-def create_config_file(filepath: str, encoding: str) -> None:
+def create_config_file(filepath: str, encoding: str) -> None:  # pragma: no cover
     """
     Create test config json file.
     :param filepath: path to config file
@@ -145,7 +146,9 @@ def create_config_file(filepath: str, encoding: str) -> None:
         json.dump(config_json, f)
 
 
-def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
+def generate_log_files(
+    conf: dict, log_dir: str, ext: str = ""
+) -> LastLogData:  # pragma: no cover
     """
     Generate some dummy log files with passed params.
     :param conf: app config
@@ -177,7 +180,9 @@ def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
     )
 
 
-def generate_report(conf: dict, encoding: str, log_file_info: LastLogData) -> None:
+def generate_report(
+    conf: dict, encoding: str, log_file_info: LastLogData
+) -> None:  # pragma: no cover
     """
     Generate fake report.
     :param conf: app config
@@ -191,7 +196,7 @@ def generate_report(conf: dict, encoding: str, log_file_info: LastLogData) -> No
         f.write(TEST_STR)
 
 
-class TestLogAnalyzer(TestCase):
+class TestLogAnalyzer(TestCase):  # pragma: no cover
     def setUp(self) -> None:
         """
         Setup method for Log Analyzer test class.
@@ -257,13 +262,15 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
-        log_file_info, f_lines = get_log_data(self.conf)
+        log_file_info = search_log_file(self.conf)
+        log_file_data = get_log_data(log_file_info, self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
         self.assertEqual(log_file_info.path, log_file_info_fixture.path)
         self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
-        self.assertEqual(f_lines, res_fixture)
+        for line, fixt_line in zip(log_file_data, res_fixture):
+            self.assertEqual(line, fixt_line)
 
     def test_get_log_data_gzip(self) -> None:
         """
@@ -271,20 +278,22 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir, ".gz")
-        log_file_info, f_lines = get_log_data(self.conf)
+        log_file_info = search_log_file(self.conf)
+        log_file_data = get_log_data(log_file_info, self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
         self.assertEqual(log_file_info.path, log_file_info_fixture.path)
         self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
-        self.assertEqual(f_lines, res_fixture)
+        for line, fixt_line in zip(log_file_data, res_fixture):
+            self.assertEqual(line, fixt_line)
 
     def test_get_log_data_no_log_data(self) -> None:
         """
         Test getting log data with no log files.
         :return:
         """
-        self.assertRaises(FileExistsError, get_log_data, self.conf)
+        self.assertRaises(FileExistsError, search_log_file, self.conf)
 
     def test_parse_log_data(self) -> None:
         """
@@ -292,7 +301,7 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_text, result_fixture, _ = get_log_file_text_fixture()
-        records = log_text.split("\n")
+        records = (line for line in log_text.split("\n"))
 
         result_gen = parse_log_data(records, "test_file_path", self.conf)
         result = {}
@@ -306,7 +315,7 @@ class TestLogAnalyzer(TestCase):
         Test parsing not valid log file data.
         :return:
         """
-        records = get_str_list_fixture()
+        records = (line for line in get_str_list_fixture())
         res_gen = parse_log_data(records, "test_file_path", self.conf)
         self.assertRaises(ValueError, next, res_gen)
 
@@ -316,7 +325,7 @@ class TestLogAnalyzer(TestCase):
         :return:
         """
         log_text, _, report_data_fxt = get_log_file_text_fixture()
-        records = log_text.split("\n")
+        records = (line for line in log_text.split("\n"))
         parsed_data = parse_log_data(records, "test_file_path", self.conf)
         report_data = prepare_report_data(parsed_data)
         self.assertEqual(report_data, report_data_fxt)
