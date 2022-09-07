@@ -1,5 +1,5 @@
 """
-TODO
+Tests for Log Analyzer app.
 """
 import argparse
 import datetime
@@ -28,17 +28,27 @@ TEST_STR = "test str\n" * 4
 
 
 def remove_tmpdir(dir_name: str) -> None:
-    """TODO"""
+    """
+    Delete temp dir with dir_name.
+    :param dir_name: dir name.
+    :return:
+    """
     shutil.rmtree(dir_name)
 
 
 def get_str_list_fixture() -> List[str]:
-    """TODO"""
+    """
+    Returns list of TEST_STR text lines.
+    :return: list of test text lines.
+    """
     return list(map(lambda e: f"{e}\n", TEST_STR.split("\n")[:-1]))
 
 
 def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
-    """TODO"""
+    """
+    Returns fixtures of the test log file.
+    :return: tuple with (log_text, parse_result_dict, list_of_report_data_dict)
+    """
     log_text = (
         '1.196.116.32 -  - [29/Jun/2017:03:50:22 +0300] "GET /api/v2/banner/25019354 HTTP/1.1" 200 927 "-" '
         '"Lynx/2.8.8dev.9 libwww-FM/2.14 SSL-MM/1.4.1 GNUTLS/2.10.5" "-" "1498697422-2190034393-4708-9752759" '
@@ -118,12 +128,17 @@ def get_log_file_text_fixture() -> Tuple[str, dict, List[dict]]:
 
 
 def create_config_file(filepath: str, encoding: str) -> None:
-    """TODO"""
+    """
+    Create test config json file.
+    :param filepath: path to config file
+    :param encoding: encoding of config file
+    :return:
+    """
     config_json = {
         "REPORT_SIZE": 1000,
         "LOGS_FILENAME": "exec_logs",
         "LOG_LEVEL": "DEBUG",
-        "DATA_ENCONDING": "UTF-8",
+        "DATA_ENCODING": "UTF-8",
         "SOME_OTHER_FLAG": True,
     }
     with open(filepath, "w", encoding=encoding) as f:
@@ -131,7 +146,14 @@ def create_config_file(filepath: str, encoding: str) -> None:
 
 
 def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
-    """TODO"""
+    """
+    Generate some dummy log files with passed params.
+    :param conf: app config
+    :param log_dir: directory for generated log files
+    :param ext: extension for the last log file.
+    :return: named tuple with fixture log data
+    (path_to_file, date_in_filename, file_extension)
+    """
     test_string_list = get_str_list_fixture()
     log_files_info = [
         ("nginx-access-ui.log-20220828.bz2", "", test_string_list),
@@ -155,16 +177,26 @@ def generate_log_files(conf: dict, log_dir: str, ext: str = "") -> LastLogData:
     )
 
 
-def generate_report(config: dict, encoding: str, log_file_info: LastLogData) -> None:
-    """TODO"""
-    rep_path = get_report_path(log_file_info.date, config)
+def generate_report(conf: dict, encoding: str, log_file_info: LastLogData) -> None:
+    """
+    Generate fake report.
+    :param conf: app config
+    :param encoding: encoding of report file
+    :param log_file_info: info of the log file as named tuple
+    (path_to_file, date_in_filename, file_extension)
+    :return:
+    """
+    rep_path = get_report_path(log_file_info.date, conf)
     with open(rep_path, "w", encoding=encoding) as f:
         f.write(TEST_STR)
 
 
 class TestLogAnalyzer(TestCase):
     def setUp(self) -> None:
-        """TODO"""
+        """
+        Setup method for Log Analyzer test class.
+        :return:
+        """
         super().setUp()
         self.base_dir = tempfile.mkdtemp()
         self.addCleanup(remove_tmpdir, self.base_dir)
@@ -175,14 +207,14 @@ class TestLogAnalyzer(TestCase):
             "REPORT_SIZE": 1000,
             "REPORT_DIR": self.rep_dir,
             "LOG_DIR": self.log_dir,
-            "DATA_ENCONDING": "UTF-8",
+            "DATA_ENCODING": "UTF-8",
             "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
             "LOGS_FILENAME": os.path.join(self.log_dir, "exec_logs"),
             "LOG_LEVEL": "DEBUG",
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
-        self.encoding = str(self.config["DATA_ENCONDING"])
+        self.encoding = str(self.config["DATA_ENCODING"])
         create_config_file(self.config_file_path, self.encoding)
 
         self.conf = get_config(
@@ -193,25 +225,37 @@ class TestLogAnalyzer(TestCase):
         self.log_gzip_file_path = os.path.join(self.log_file_path, ".gz")
 
     def test_config_setup(self) -> None:
-        """TODO"""
+        """
+        Test config setting up with merging config file and const.
+        :return:
+        """
         self.assertIsInstance(self.conf, dict)
         self.assertEqual(self.conf["SOME_OTHER_FLAG"], True)
         self.assertEqual(self.conf["REPORT_DIR"], self.rep_dir)
         self.assertEqual(self.conf["LOG_DIR"], self.log_dir)
 
     def test_search_last_log_file_with_wrong_log_dir(self) -> None:
-        """TODO"""
+        """
+        Test last log file searching with invalid log dir.
+        :return:
+        """
         self.conf["LOG_DIR"] = "foo"
         self.assertRaises(NotADirectoryError, search_last_log, self.conf)
 
-    def test_search_last_log_file_report_exist(self) -> None:
-        """TODO"""
+    def test_generate_report_while_report_exist(self) -> None:
+        """
+        Test report generating while report exists.
+        :return:
+        """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
         generate_report(self.conf, self.encoding, log_file_info_fixture)
         self.assertRaises(FileExistsError, search_last_log, self.conf)
 
     def test_get_log_data(self) -> None:
-        """TODO"""
+        """
+        Test getting last log file data.
+        :return:
+        """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
         log_file_info, f_lines = get_log_data(self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
@@ -222,7 +266,10 @@ class TestLogAnalyzer(TestCase):
         self.assertEqual(f_lines, res_fixture)
 
     def test_get_log_data_gzip(self) -> None:
-        """TODO"""
+        """
+        Test getting last log gzip file data.
+        :return:
+        """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir, ".gz")
         log_file_info, f_lines = get_log_data(self.conf)
         self.assertEqual(log_file_info.date, log_file_info_fixture.date)
@@ -233,11 +280,17 @@ class TestLogAnalyzer(TestCase):
         self.assertEqual(f_lines, res_fixture)
 
     def test_get_log_data_no_log_data(self) -> None:
-        """TODO"""
-        self.assertRaises(ValueError, get_log_data, self.conf)
+        """
+        Test getting log data with no log files.
+        :return:
+        """
+        self.assertRaises(FileExistsError, get_log_data, self.conf)
 
     def test_parse_log_data(self) -> None:
-        """TODO"""
+        """
+        Test parsing log file data.
+        :return:
+        """
         log_text, result_fixture, _ = get_log_file_text_fixture()
         records = log_text.split("\n")
 
@@ -249,13 +302,19 @@ class TestLogAnalyzer(TestCase):
         self.assertEqual(result_fixture, result)
 
     def test_parse_not_valid_data(self) -> None:
-        """TODO"""
+        """
+        Test parsing not valid log file data.
+        :return:
+        """
         records = get_str_list_fixture()
         res_gen = parse_log_data(records, "test_file_path", self.conf)
         self.assertRaises(ValueError, next, res_gen)
 
     def test_prepare_report_data(self) -> None:
-        """TODO"""
+        """
+        Test preparing report data.
+        :return:
+        """
         log_text, _, report_data_fxt = get_log_file_text_fixture()
         records = log_text.split("\n")
         parsed_data = parse_log_data(records, "test_file_path", self.conf)
@@ -263,7 +322,10 @@ class TestLogAnalyzer(TestCase):
         self.assertEqual(report_data, report_data_fxt)
 
     def test_main(self) -> None:
-        """TODO"""
+        """
+        Test main method of the Log Analyzer.
+        :return:
+        """
         with mock.patch(
             "argparse.ArgumentParser.parse_args",
             return_value=argparse.Namespace(

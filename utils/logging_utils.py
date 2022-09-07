@@ -1,5 +1,5 @@
 """
-TODO
+Module for logging
 """
 import getpass
 import logging
@@ -8,7 +8,10 @@ import socket
 
 
 def get_extra_data() -> dict:
-    """TODO"""
+    """
+    Some extra data for logging.
+    :return: dict with extra data
+    """
     return {
         "clientip": socket.gethostbyname(socket.gethostname()),
         "user": getpass.getuser(),
@@ -16,22 +19,38 @@ def get_extra_data() -> dict:
 
 
 def logging_info(message: str) -> None:
-    """TODO"""
+    """
+    Execute logging.info with passed message and some extra data.
+    :param message:
+    :return:
+    """
     logging.info(message, extra=get_extra_data())
 
 
 def logging_error(message: str) -> None:
-    """TODO"""
+    """
+    Execute logging.error with passed message and some extra data.
+    :param message:
+    :return:
+    """
     logging.error(message, extra=get_extra_data())
 
 
 def logging_exception(message: str) -> None:
-    """TODO"""
+    """
+    Execute logging.exception with passed message and some extra data.
+    :param message:
+    :return:
+    """
     logging.exception(message, extra=get_extra_data(), exc_info=True)
 
 
 def setup_logging(conf: dict) -> None:
-    """TODO"""
+    """
+    Initial logging setup.
+    :param conf: app configs
+    :return:
+    """
     log_dir = conf.get("LOG_DIR")
     log_filename = conf.get("LOGS_FILENAME")
     logs_path = None

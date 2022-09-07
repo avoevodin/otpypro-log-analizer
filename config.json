@@ -2,7 +2,7 @@
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./log",
-    "LOGS_FILENAME": "log/exec_logs",
+    "LOGS_FILENAME": "exec_logs",
     "LOG_LEVEL": "DEBUG",
-    "DATA_ENCONDING": "UTF-8"
+    "DATA_ENCODING": "UTF-8"
 }
