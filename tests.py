@@ -123,7 +123,7 @@ def create_config_file(filepath: str, encoding: str) -> None:
         "REPORT_SIZE": 1000,
         "LOGS_FILENAME": "exec_logs",
         "LOG_LEVEL": "DEBUG",
-        "DATA_ENCONDING": "UTF-8",
+        "DATA_ENCODING": "UTF-8",
         "SOME_OTHER_FLAG": True,
     }
     with open(filepath, "w", encoding=encoding) as f:
@@ -175,14 +175,14 @@ class TestLogAnalyzer(TestCase):
             "REPORT_SIZE": 1000,
             "REPORT_DIR": self.rep_dir,
             "LOG_DIR": self.log_dir,
-            "DATA_ENCONDING": "UTF-8",
+            "DATA_ENCODING": "UTF-8",
             "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
             "LOGS_FILENAME": os.path.join(self.log_dir, "exec_logs"),
             "LOG_LEVEL": "DEBUG",
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
-        self.encoding = str(self.config["DATA_ENCONDING"])
+        self.encoding = str(self.config["DATA_ENCODING"])
         create_config_file(self.config_file_path, self.encoding)
 
         self.conf = get_config(

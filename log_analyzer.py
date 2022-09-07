@@ -34,7 +34,7 @@ config: Dict[str, Union[int, float, str]] = {
     "REPORT_SIZE": 1000,
     "REPORT_DIR": "./reports",
     "LOG_DIR": "./log",
-    "DATA_ENCONDING": "UTF-8",
+    "DATA_ENCODING": "UTF-8",
     "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
 }
 
@@ -94,12 +94,12 @@ def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
         with gzip.open(log_file_info.path, "rb") as fb:
             f_lines = list(
                 map(
-                    lambda line: line.decode(encoding=conf["DATA_ENCONDING"]),
+                    lambda line: line.decode(encoding=conf["DATA_ENCODING"]),
                     fb.readlines(),
                 )
             )
     else:
-        with open(log_file_info.path, "r", encoding=conf["DATA_ENCONDING"]) as f:
+        with open(log_file_info.path, "r", encoding=conf["DATA_ENCODING"]) as f:
             f_lines = f.readlines()
     logging_info(f"The file {log_file_info.path!r} has been successfully loaded!")
     return log_file_info, f_lines
@@ -211,9 +211,9 @@ def create_report_file(
     logging_info("Start report file creating...")
     report_path = get_report_path(report_date, conf)
     with open(
-        "templates/report.html", "r", encoding=conf["DATA_ENCONDING"]
+        "templates/report.html", "r", encoding=conf["DATA_ENCODING"]
     ) as report_template:
-        with open(report_path, "w", encoding=conf["DATA_ENCONDING"]) as report:
+        with open(report_path, "w", encoding=conf["DATA_ENCODING"]) as report:
             report_str_template = Template(report_template.read())
             report_str = report_str_template.safe_substitute(
                 table_json=json.dumps(report_data)

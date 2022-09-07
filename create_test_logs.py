@@ -16,7 +16,7 @@ CONFIG_DEFAULT_PATH = "config.json"
 
 config: Dict[str, Union[int, float, str]] = {
     "LOG_DIR": "./generated_logs",
-    "DATA_ENCONDING": "UTF-8",
+    "DATA_ENCODING": "UTF-8",
 }
 
 fake = Faker()
@@ -36,7 +36,7 @@ def create_log_file(fn: str, ext: str, records: List, conf: dict) -> None:
     f_ext = ext if ext != GZ_EXT else ""
     fn = f"{fn}{f_ext}"
     log_dir = conf["LOG_DIR"]
-    encoding = conf["DATA_ENCONDING"]
+    encoding = conf["DATA_ENCODING"]
     logging_info(f"Start creating a file '{fn}'")
     f_path = os.path.join(log_dir, fn)
     with open(f_path, "w", encoding=encoding) as f:
