@@ -204,7 +204,7 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
         for data in urls_data_dict.items()
     ]
     urls_data = sorted(urls_data, key=lambda el: el["time_sum"], reverse=True)
-    report_size: int = int(config["REPORT_SIZE"])
+    report_size = int(config["REPORT_SIZE"])
     if report_size:
         urls_data = urls_data[:report_size]
 
