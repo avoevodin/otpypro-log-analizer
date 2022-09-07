@@ -101,7 +101,7 @@ def get_log_data(conf: dict) -> Tuple[LastLogData, List[str]]:
     if log_file_info:
         logging_info(f"Log file {log_file_info.path!r} has been found successfully!")
     else:
-        raise ValueError(f"Log file hasn't been found!")
+        raise FileExistsError(f"Log file hasn't been found!")
 
     logging_info(f"Loading the log file {log_file_info.path!r}...")
     if log_file_info.ext:
@@ -277,6 +277,8 @@ def main(init_config) -> None:
     except ValueError as e:
         logging_error(f"Warning: {e}")
         sys.exit()
+    except FileExistsError as e:
+        logging_info(f"Warning: {e}")
     except KeyboardInterrupt as e:
         logging_exception(f"Process has been interrupted: {e}")
     except BaseException as e:
