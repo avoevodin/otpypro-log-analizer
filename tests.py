@@ -12,18 +12,17 @@ import unittest
 from typing import List, Tuple
 from unittest import TestCase, mock
 
-from create_test_logs import create_log_file
-from create_test_logs import main as create_test_logs_main
+from create_test_logs import main as create_test_logs_main, create_log_file
 from log_analyzer import (
     PARSE_ERROR_LIMIT,
     LastLogData,
-    get_config,
     get_log_data,
     get_report_path,
     search_log_file,
 )
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
+from config import get_config
 
 TEST_STR = "test str\n" * 4
 
@@ -216,15 +215,14 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
             "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
             "LOGS_FILENAME": os.path.join(self.log_dir, "exec_logs"),
             "LOG_LEVEL": "DEBUG",
+            "GENERATED_LOG_DIR": self.log_dir,
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
         self.encoding = str(self.config["DATA_ENCODING"])
         create_config_file(self.config_file_path, self.encoding)
-
-        self.conf = get_config(
-            self.config, argparse.Namespace(conf=self.config_file_path)
-        )
+        with mock.patch("config.CONFIG_DEFAULT_PATH", self.config_file_path):
+            self.conf = get_config(self.config)
 
         self.log_file_path = os.path.join(self.log_dir, "nginx-access-ui.log-20220630")
         self.log_gzip_file_path = os.path.join(self.log_file_path, ".gz")

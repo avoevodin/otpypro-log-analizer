@@ -5,6 +5,7 @@ import getpass
 import logging
 import os
 import socket
+from logging import LoggerAdapter
 
 
 def get_extra_data() -> dict:
@@ -18,36 +19,10 @@ def get_extra_data() -> dict:
     }
 
 
-def logging_info(message: str) -> None:
+def get_logger_adapter(name: str, conf: dict) -> LoggerAdapter:
     """
-    Execute logging.info with passed message and some extra data.
-    :param message:
-    :return:
-    """
-    logging.info(message, extra=get_extra_data())
-
-
-def logging_error(message: str) -> None:
-    """
-    Execute logging.error with passed message and some extra data.
-    :param message:
-    :return:
-    """
-    logging.error(message, extra=get_extra_data())
-
-
-def logging_exception(message: str) -> None:
-    """
-    Execute logging.exception with passed message and some extra data.
-    :param message:
-    :return:
-    """
-    logging.exception(message, extra=get_extra_data(), exc_info=True)
-
-
-def setup_logging(conf: dict) -> None:
-    """
-    Initial logging setup.
+    Return logger adapter with init settings.
+    :param name: module name
     :param conf: app configs
     :return:
     """
@@ -62,3 +37,5 @@ def setup_logging(conf: dict) -> None:
         datefmt="%Y.%m.%d %H:%M:%S",
         level=conf.get("LOG_LEVEL") or "DEBUG",
     )
+    logger = logging.getLogger(name)
+    return LoggerAdapter(logger, get_extra_data())
