@@ -32,7 +32,6 @@ config: Dict[str, Union[int, float, str]] = {
 }
 
 LastLogData = namedtuple("LastLogData", "path, date, ext")
-
 logger_adapter = get_logger_adapter(__name__, get_config(config))
 
 
