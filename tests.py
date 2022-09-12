@@ -136,7 +136,7 @@ def create_config_file(filepath: str, encoding: str) -> None:  # pragma: no cove
     """
     config_json = {
         "REPORT_SIZE": 1000,
-        "LOGS_FILENAME": "exec_logs",
+        "LOGS_FILENAME": None,
         "LOG_LEVEL": "DEBUG",
         "DATA_ENCODING": "UTF-8",
         "SOME_OTHER_FLAG": True,
