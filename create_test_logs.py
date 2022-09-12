@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Tuple, Union
 from faker import Faker
 
 from helpers.args_parser import get_args_create_test_logs
-from helpers.config import get_config
+from helpers.helpers_config import get_config
 from utils.logging_utils import get_logger_adapter
 
 GZ_EXT = ".gz"
