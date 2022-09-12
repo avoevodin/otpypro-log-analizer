@@ -17,6 +17,5 @@ def get_config(conf: dict) -> dict:
     with open(path_to_conf, "r") as f:
         config_from_file = json.load(f)
 
-    for key, value in config_from_file.items():
-        conf[key] = value
+    conf.update(config_from_file)
     return conf
