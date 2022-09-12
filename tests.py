@@ -12,12 +12,14 @@ import tempfile
 import unittest
 from typing import List, Tuple
 from unittest import TestCase, mock
+from utils.logging_utils import get_logger_adapter, get_extra_data
 
 with mock.patch(
     "argparse.ArgumentParser.parse_args",
     return_value=argparse.Namespace(cnt=10, records=100, conf=None),
 ), mock.patch(
-    "utils.logging_utils.get_logger_adapter", return_value=logging.getLogger()
+    "utils.logging_utils.get_logger_adapter",
+    return_value=get_logger_adapter(__name__, {}),
 ):
     from create_test_logs import main as create_test_logs_main, create_log_file
     from config import get_config
@@ -364,6 +366,12 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
                     if re.match(r"^report-\d{4}.\d{2}.\d{2}.html$", name):
                         rep_filenames.append(name)
             self.assertEqual(len(rep_filenames), 1)
+
+    def test_get_logger_adapter(self):
+        """TODO"""
+        logger_adapter = get_logger_adapter(__name__, {})
+        self.assertIsInstance(logger_adapter, logging.LoggerAdapter)
+        self.assertEqual(logger_adapter.extra, get_extra_data())
 
 
 if __name__ == "__main__":
