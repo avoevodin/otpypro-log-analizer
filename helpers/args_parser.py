@@ -21,14 +21,30 @@ def get_parsed_args(params: list) -> Namespace:
     return parser.parse_args()
 
 
-def get_args_log_analyzer(path_to_conf: str) -> Namespace:
+def get_args_create_test_logs(path_to_conf: str) -> Namespace:
     """
-    Return the Namespace with args for log analyzer app
+    Return the Namespace with args for test log creating app
     passed through cli.
     :param path_to_conf: default config file path
     :return: namespace with passed args
     """
     args_params = [
+        {
+            "names": ("--records", "-r"),
+            "kwargs": {
+                "help": "Amount of log records in each log file",
+                "required": True,
+                "type": int,
+            },
+        },
+        {
+            "names": ("--cnt", "-c"),
+            "kwargs": {
+                "help": "Log files quantity",
+                "required": True,
+                "type": int,
+            },
+        },
         {
             "names": ("--conf",),
             "kwargs": {
