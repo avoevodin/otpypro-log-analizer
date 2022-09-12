@@ -4,6 +4,7 @@ Tests for Log Analyzer app.
 import argparse
 import datetime
 import json
+import logging
 import os
 import re
 import shutil
@@ -221,7 +222,12 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         self.config_file_path = os.path.join(self.base_dir, "config.json")
         self.encoding = str(self.config["DATA_ENCODING"])
         create_config_file(self.config_file_path, self.encoding)
-        with mock.patch("config.CONFIG_DEFAULT_PATH", self.config_file_path):
+        with mock.patch(
+            "argparse.ArgumentParser.parse_args",
+            return_value=argparse.Namespace(
+                cnt=10, records=100, conf=self.config_file_path
+            ),
+        ):
             self.conf = get_config(self.config)
 
         self.log_file_path = os.path.join(self.log_dir, "nginx-access-ui.log-20220630")
