@@ -4,6 +4,7 @@ Tests for Log Analyzer app.
 import argparse
 import datetime
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,10 +13,11 @@ import unittest
 from typing import List, Tuple
 from unittest import TestCase, mock
 
-
 with mock.patch(
     "argparse.ArgumentParser.parse_args",
     return_value=argparse.Namespace(cnt=10, records=100, conf=None),
+), mock.patch(
+    "utils.logging_utils.get_logger_adapter", return_value=logging.getLogger()
 ):
     from create_test_logs import main as create_test_logs_main, create_log_file
     from config import get_config
