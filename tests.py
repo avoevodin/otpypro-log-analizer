@@ -333,7 +333,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         """
         records = (line for line in get_str_list_fixture())
         res_gen = parse_log_data(records, "test_file_path", self.conf)
-        self.assertRaises(ValueError, next, res_gen)
+        self.assertRaises(RuntimeError, next, res_gen)
 
     def test_prepare_report_data(self) -> None:
         """

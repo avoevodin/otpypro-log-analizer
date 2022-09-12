@@ -145,7 +145,7 @@ def parse_log_data(
 
     errors_limit = total_lines_cnt * errors_limit
     if errors_cnt > errors_limit:
-        raise ValueError(
+        raise RuntimeError(
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
@@ -264,7 +264,7 @@ def main(init_config) -> None:
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)
         logger_adapter.info("Log analyzer has been successfully finished...")
-    except ValueError as e:
+    except RuntimeError as e:
         logger_adapter.error(f"Warning: {e}")
         sys.exit()
     except FileExistsError as e:
