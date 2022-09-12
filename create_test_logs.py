@@ -1,5 +1,6 @@
 import datetime
 import gzip
+import logging
 import os
 import random
 from argparse import Namespace
@@ -22,7 +23,7 @@ config: Dict[str, Union[int, float, str]] = {
 
 fake = Faker()
 
-logger_adapter = get_logger_adapter(__name__, get_config(config, Namespace(conf=None)))
+logger_adapter = logging.getLogger()
 
 
 def clear_test_logs_dir(conf: dict) -> None:
