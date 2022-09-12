@@ -1,8 +1,6 @@
 import json
 from argparse import Namespace
 
-from helpers.args_parser import get_args_create_test_logs
-
 CONFIG_DEFAULT_PATH = "config.json"
 
 

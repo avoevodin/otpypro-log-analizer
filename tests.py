@@ -13,7 +13,6 @@ import unittest
 from typing import List, Tuple
 from unittest import TestCase, mock
 
-from create_test_logs import main as create_test_logs_main, create_log_file
 from log_analyzer import (
     PARSE_ERROR_LIMIT,
     LastLogData,
@@ -24,6 +23,12 @@ from log_analyzer import (
 from log_analyzer import main as log_analyzer_main
 from log_analyzer import parse_log_data, prepare_report_data, search_last_log
 from config import get_config
+
+with mock.patch(
+    "argparse.ArgumentParser.parse_args",
+    return_value=argparse.Namespace(cnt=10, records=100, conf=None),
+):
+    from create_test_logs import main as create_test_logs_main, create_log_file
 
 TEST_STR = "test str\n" * 4
 

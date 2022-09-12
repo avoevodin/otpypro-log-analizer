@@ -19,10 +19,11 @@ config: Dict[str, Union[int, float, str]] = {
     "DATA_ENCODING": "UTF-8",
 }
 
+logger_adapter = get_logger_adapter(
+    __name__, get_config(config, get_args_create_test_logs(None))
+)
 
 fake = Faker()
-
-logger_adapter = get_logger_adapter(__name__, get_config(config, Namespace(conf=None)))
 
 
 def clear_test_logs_dir(conf: dict) -> None:

@@ -4,6 +4,7 @@ Parse args passed to cli
 
 import argparse
 from argparse import Namespace
+from typing import Optional
 
 
 def get_parsed_args(params: list) -> Namespace:
@@ -21,7 +22,7 @@ def get_parsed_args(params: list) -> Namespace:
     return parser.parse_args()
 
 
-def get_args_create_test_logs(path_to_conf: str) -> Namespace:
+def get_args_create_test_logs(path_to_conf: Optional[str]) -> Namespace:
     """
     Return the Namespace with args for test log creating app
     passed through cli.
