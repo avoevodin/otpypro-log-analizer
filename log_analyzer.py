@@ -12,22 +12,27 @@ import json
 import os
 import re
 import sys
-from argparse import Namespace
 from collections import namedtuple
 from datetime import datetime
+from io import TextIOWrapper
 from statistics import mean, median
 from string import Template
-from typing import Any, Dict, Generator, Optional, Tuple, Union, List
-
-from utils.args_parser import get_args_log_analyzer
-from utils.logging_utils import (
-    logging_error,
-    logging_exception,
-    logging_info,
-    setup_logging,
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Optional,
+    Tuple,
+    Union,
+    List,
+    Callable,
+    BinaryIO,
+    IO,
 )
 
-CONFIG_DEFAULT_PATH = "config.json"
+from config import get_config
+from utils.logging_utils import get_logger_adapter
+
 PARSE_ERROR_LIMIT = 0.2
 
 config: Dict[str, Union[int, float, str]] = {
@@ -40,52 +45,7 @@ config: Dict[str, Union[int, float, str]] = {
 
 LastLogData = namedtuple("LastLogData", "path, date, ext")
 
-
-def get_config(conf: dict, params: Namespace) -> dict:
-    """
-    Return dict with app configs, merged from const and the passed config file.
-    :param conf: app config
-    :param params: params passed through the cli
-    :return: dict with app configs
-    """
-    path_to_conf = params.conf or CONFIG_DEFAULT_PATH
-    with open(path_to_conf, "r") as f:
-        config_from_file = json.load(f)
-
-    for key, value in config_from_file.items():
-        conf[key] = value
-    return conf
-
-
-def search_last_log(conf: dict) -> Optional[LastLogData]:
-    """
-    Returns last by the date in filename matched log from the log dir.
-    :param conf: app configs
-    :return: named tuple (path_to_file, date_in_filename, file_extension)
-    """
-    log_dir = str(conf.get("LOG_DIR"))
-
-    if not os.path.isdir(log_dir):
-        raise NotADirectoryError
-
-    res_file_info = None
-
-    for file in os.listdir(log_dir):
-        fn_match = re.match(r"^[\w\-.]+(?P<date>\d{8})(?P<ext>.gz|)$", file)
-        if fn_match:
-            log_date = datetime.strptime(fn_match.group("date"), "%Y%m%d")
-            ext = fn_match.group("ext")
-
-            current_file_info = LastLogData(os.path.join(log_dir, file), log_date, ext)
-            if res_file_info is None or res_file_info.date < current_file_info.date:
-                res_file_info = current_file_info
-
-    if res_file_info:
-        report_path = get_report_path(res_file_info.date, conf)
-        if os.path.isfile(report_path):
-            raise FileExistsError(f"Report file already exists: {str(report_path)!r}")
-
-    return res_file_info
+logger_adapter = get_logger_adapter(__name__, get_config(config))
 
 
 def search_log_file(conf) -> LastLogData:
@@ -94,11 +54,33 @@ def search_log_file(conf) -> LastLogData:
     :param conf: app configs
     :return: named tuple (path_to_file, date_in_filename, file_extension)
     """
-    logging_info("Searching last log file...")
-    log_file_info = search_last_log(conf)
+    logger_adapter.info("Searching last log file...")
+    log_dir = str(conf.get("LOG_DIR"))
+
+    if not os.path.isdir(log_dir):
+        raise NotADirectoryError
+
+    log_file_info = None
+
+    for file in os.listdir(log_dir):
+        fn_match = re.match(r"^[\w\-.]+(?P<date>\d{8})(?P<ext>.gz|)$", file)
+        if fn_match:
+            log_date = datetime.strptime(fn_match.group("date"), "%Y%m%d")
+            ext = fn_match.group("ext")
+
+            current_file_info = LastLogData(os.path.join(log_dir, file), log_date, ext)
+            if log_file_info is None or log_file_info.date < current_file_info.date:
+                log_file_info = current_file_info
 
     if log_file_info:
-        logging_info(f"Log file {log_file_info.path!r} has been found successfully!")
+        report_path = get_report_path(log_file_info.date, conf)
+        if os.path.isfile(report_path):
+            raise FileExistsError(f"Report file already exists: {str(report_path)!r}")
+
+    if log_file_info:
+        logger_adapter.info(
+            f"Log file {log_file_info.path!r} has been found successfully!"
+        )
     else:
         raise FileExistsError(f"Log file hasn't been found!")
 
@@ -112,16 +94,18 @@ def get_log_data(log_file_info: LastLogData, conf: dict) -> Generator[str, None,
     :param conf: app config
     :return: generator for strings of log file records
     """
-    logging_info(f"Loading the log file {log_file_info.path!r}...")
-    if log_file_info.ext:
-        with gzip.open(log_file_info.path, "rb") as fb:
-            for line in fb:
-                yield line.decode(encoding=conf["DATA_ENCODING"])
-    else:
-        with open(log_file_info.path, "r", encoding=conf["DATA_ENCODING"]) as f:
-            for line in f:
-                yield line
-    logging_info(f"The file {log_file_info.path!r} has been successfully loaded!")
+    logger_adapter.info(f"Loading the log file {log_file_info.path!r}...")
+    gzip_open: Callable[[str, str], Any] = gzip.open
+    file_open: Callable[[str, str], Any] = open
+    open_fn: Callable[[str, str], Any] = (
+        gzip_open if log_file_info.ext == ".gz" else file_open
+    )
+    with open_fn(log_file_info.path, "rb") as fb:
+        for line in fb:
+            yield line.decode(encoding=conf["DATA_ENCODING"])
+    logger_adapter.info(
+        f"The file {log_file_info.path!r} has been successfully loaded!"
+    )
 
 
 def parse_log_data(
@@ -134,7 +118,7 @@ def parse_log_data(
     :param conf: app configs
     :return: generator with url string and request time float number.
     """
-    logging_info(f"Start parsing log file ({filepath!r}) data...")
+    logger_adapter.info(f"Start parsing log file ({filepath!r}) data...")
     errors_limit = conf.get("PARSE_ERROR_LIMIT") or PARSE_ERROR_LIMIT
     total_lines_cnt = 0
     errors_cnt = 0
@@ -152,7 +136,9 @@ def parse_log_data(
             else:
                 raise ValueError(f"Can't parse url and time from log string:\n{line}")
         except Exception as e:
-            logging_error(f"The error occurred while parsing file {filepath!r}: {e}")
+            logger_adapter.error(
+                f"The error occurred while parsing file {filepath!r}: {e}"
+            )
             errors_cnt += 1
             continue
 
@@ -160,7 +146,7 @@ def parse_log_data(
 
     errors_limit = total_lines_cnt * errors_limit
     if errors_cnt > errors_limit:
-        raise ValueError(
+        raise RuntimeError(
             f"Too much errors has occurred while parsing file {filepath!r}"
         )
     else:
@@ -168,7 +154,7 @@ def parse_log_data(
         errors_percentage_text = (
             f" There were ~{errors_perc}% of errors." if errors_perc else ""
         )
-        logging_info(
+        logger_adapter.info(
             f"The file {filepath!r} has been parsed successfully.{errors_percentage_text}"
         )
 
@@ -179,7 +165,7 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
     :param parsed_data: parsed log file data generator (url, request_time)
     :return: list of a report lines.
     """
-    logging_info(f"Start preparing report data...")
+    logger_adapter.info(f"Start preparing report data...")
     urls_data_dict: Dict[str, Any] = {}
     total_time_sum = total_measurments = 0
     for url, time in parsed_data:
@@ -223,7 +209,7 @@ def prepare_report_data(parsed_data: Generator) -> List[dict]:
                 "time_med": round(median(series), 3),
             }
         )
-    logging_info(f"Report data has been prepared successfully.")
+    logger_adapter.info(f"Report data has been prepared successfully.")
     return report_data
 
 
@@ -248,7 +234,7 @@ def create_report_file(
     :param conf: app configs
     :return:
     """
-    logging_info("Start report file creating...")
+    logger_adapter.info("Start report file creating...")
     report_path = get_report_path(report_date, conf)
     with open(
         "templates/report.html", "r", encoding=conf["DATA_ENCODING"]
@@ -259,7 +245,7 @@ def create_report_file(
                 table_json=json.dumps(report_data)
             )
             report.write(report_str)
-    logging_info(f"Finish report file {str(report_path)!r} creating...")
+    logger_adapter.info(f"Finish report file {str(report_path)!r} creating...")
 
 
 def main(init_config) -> None:
@@ -269,26 +255,25 @@ def main(init_config) -> None:
     :return:
     """
     try:
-        params = get_args_log_analyzer(CONFIG_DEFAULT_PATH)
-        conf = get_config(init_config, params)
-        setup_logging(conf)
 
-        logging_info("Log analyzer has been started...")
+        conf = get_config(init_config)
+
+        logger_adapter.info("Log analyzer has been started...")
         log_file_info = search_log_file(conf)
         log_file_data = get_log_data(log_file_info, conf)
         parsed_data = parse_log_data(log_file_data, log_file_info.path, conf)
         report_data = prepare_report_data(parsed_data)
         create_report_file(report_data, log_file_info.date, conf)
-        logging_info("Log analyzer has been successfully finished...")
-    except ValueError as e:
-        logging_error(f"Warning: {e}")
+        logger_adapter.info("Log analyzer has been successfully finished...")
+    except RuntimeError as e:
+        logger_adapter.error(f"Warning: {e}")
         sys.exit()
     except FileExistsError as e:
-        logging_info(f"Warning: {e}")
+        logger_adapter.info(f"Warning: {e}")
     except KeyboardInterrupt as e:
-        logging_exception(f"Process has been interrupted: {e}")
+        logger_adapter.exception(f"Process has been interrupted: {e}")
     except BaseException as e:
-        logging_exception(f"Error: {e}")
+        logger_adapter.exception(f"Error: {e}")
 
 
 if __name__ == "__main__":  # pragma: no cover

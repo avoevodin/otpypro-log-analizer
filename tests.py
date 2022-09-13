@@ -4,6 +4,7 @@ Tests for Log Analyzer app.
 import argparse
 import datetime
 import json
+import logging
 import os
 import re
 import shutil
@@ -11,19 +12,29 @@ import tempfile
 import unittest
 from typing import List, Tuple
 from unittest import TestCase, mock
+from utils.logging_utils import get_logger_adapter, get_extra_data
 
-from create_test_logs import create_log_file
-from create_test_logs import main as create_test_logs_main
-from log_analyzer import (
-    PARSE_ERROR_LIMIT,
-    LastLogData,
-    get_config,
-    get_log_data,
-    get_report_path,
-    search_log_file,
-)
-from log_analyzer import main as log_analyzer_main
-from log_analyzer import parse_log_data, prepare_report_data, search_last_log
+with mock.patch(
+    "argparse.ArgumentParser.parse_args",
+    return_value=argparse.Namespace(cnt=10, records=100, conf=None),
+), mock.patch(
+    "utils.logging_utils.get_logger_adapter",
+    return_value=get_logger_adapter(__name__, {}),
+):
+    from create_test_logs import main as create_test_logs_main, create_log_file
+    from config import get_config
+
+    from log_analyzer import (
+        PARSE_ERROR_LIMIT,
+        LastLogData,
+        get_log_data,
+        get_report_path,
+        search_log_file,
+        main as log_analyzer_main,
+        parse_log_data,
+        prepare_report_data,
+    )
+
 
 TEST_STR = "test str\n" * 4
 
@@ -137,7 +148,7 @@ def create_config_file(filepath: str, encoding: str) -> None:  # pragma: no cove
     """
     config_json = {
         "REPORT_SIZE": 1000,
-        "LOGS_FILENAME": "exec_logs",
+        "LOGS_FILENAME": None,
         "LOG_LEVEL": "DEBUG",
         "DATA_ENCODING": "UTF-8",
         "SOME_OTHER_FLAG": True,
@@ -216,15 +227,19 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
             "PARSE_ERROR_LIMIT": PARSE_ERROR_LIMIT,
             "LOGS_FILENAME": os.path.join(self.log_dir, "exec_logs"),
             "LOG_LEVEL": "DEBUG",
+            "GENERATED_LOG_DIR": self.log_dir,
         }
 
         self.config_file_path = os.path.join(self.base_dir, "config.json")
         self.encoding = str(self.config["DATA_ENCODING"])
         create_config_file(self.config_file_path, self.encoding)
-
-        self.conf = get_config(
-            self.config, argparse.Namespace(conf=self.config_file_path)
-        )
+        with mock.patch(
+            "argparse.ArgumentParser.parse_args",
+            return_value=argparse.Namespace(
+                cnt=10, records=100, conf=self.config_file_path
+            ),
+        ):
+            self.conf = get_config(self.config)
 
         self.log_file_path = os.path.join(self.log_dir, "nginx-access-ui.log-20220630")
         self.log_gzip_file_path = os.path.join(self.log_file_path, ".gz")
@@ -245,7 +260,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         :return:
         """
         self.conf["LOG_DIR"] = "foo"
-        self.assertRaises(NotADirectoryError, search_last_log, self.conf)
+        self.assertRaises(NotADirectoryError, search_log_file, self.conf)
 
     def test_generate_report_while_report_exist(self) -> None:
         """
@@ -254,7 +269,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
         generate_report(self.conf, self.encoding, log_file_info_fixture)
-        self.assertRaises(FileExistsError, search_last_log, self.conf)
+        self.assertRaises(FileExistsError, search_log_file, self.conf)
 
     def test_get_log_data(self) -> None:
         """
@@ -280,9 +295,11 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir, ".gz")
         log_file_info = search_log_file(self.conf)
         log_file_data = get_log_data(log_file_info, self.conf)
-        self.assertEqual(log_file_info.date, log_file_info_fixture.date)
-        self.assertEqual(log_file_info.path, log_file_info_fixture.path)
-        self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
+        self.assertIsNotNone(log_file_info)
+        if log_file_info is not None:
+            self.assertEqual(log_file_info.date, log_file_info_fixture.date)
+            self.assertEqual(log_file_info.path, log_file_info_fixture.path)
+            self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
         for line, fixt_line in zip(log_file_data, res_fixture):
@@ -317,7 +334,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         """
         records = (line for line in get_str_list_fixture())
         res_gen = parse_log_data(records, "test_file_path", self.conf)
-        self.assertRaises(ValueError, next, res_gen)
+        self.assertRaises(RuntimeError, next, res_gen)
 
     def test_prepare_report_data(self) -> None:
         """
@@ -350,6 +367,12 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
                     if re.match(r"^report-\d{4}.\d{2}.\d{2}.html$", name):
                         rep_filenames.append(name)
             self.assertEqual(len(rep_filenames), 1)
+
+    def test_get_logger_adapter(self):
+        """TODO"""
+        logger_adapter = get_logger_adapter(__name__, {})
+        self.assertIsInstance(logger_adapter, logging.LoggerAdapter)
+        self.assertEqual(logger_adapter.extra, get_extra_data())
 
 
 if __name__ == "__main__":
