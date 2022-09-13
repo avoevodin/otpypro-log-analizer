@@ -94,14 +94,10 @@ def get_log_data(log_file_info: LastLogData, conf: dict) -> Generator[str, None,
     :return: generator for strings of log file records
     """
     logger_adapter.info(f"Loading the log file {log_file_info.path!r}...")
-    if log_file_info.ext:
-        with gzip.open(log_file_info.path, "rb") as fb:
-            for line in fb:
-                yield line.decode(encoding=conf["DATA_ENCODING"])
-    else:
-        with open(log_file_info.path, "r", encoding=conf["DATA_ENCODING"]) as f:
-            for line in f:
-                yield line
+    open_fn = gzip.open if log_file_info.ext == ".gz" else open
+    with open_fn(log_file_info.path, "rb") as fb:
+        for line in fb:
+            yield line.decode(encoding=conf["DATA_ENCODING"])
     logger_adapter.info(
         f"The file {log_file_info.path!r} has been successfully loaded!"
     )
