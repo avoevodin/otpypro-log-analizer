@@ -36,18 +36,19 @@ LastLogData = namedtuple("LastLogData", "path, date, ext")
 logger_adapter = get_logger_adapter(__name__, get_config(config))
 
 
-def search_last_log(conf: dict) -> Optional[LastLogData]:
+def search_log_file(conf) -> Optional[LastLogData]:
     """
-    Returns last by the date in filename matched log from the log dir.
+    Returns last log file by date in the name of log.
     :param conf: app configs
     :return: named tuple (path_to_file, date_in_filename, file_extension)
     """
+    logger_adapter.info("Searching last log file...")
     log_dir = str(conf.get("LOG_DIR"))
 
     if not os.path.isdir(log_dir):
         raise NotADirectoryError
 
-    res_file_info = None
+    log_file_info = None
 
     for file in os.listdir(log_dir):
         fn_match = re.match(r"^[\w\-.]+(?P<date>\d{8})(?P<ext>.gz|)$", file)
@@ -56,25 +57,13 @@ def search_last_log(conf: dict) -> Optional[LastLogData]:
             ext = fn_match.group("ext")
 
             current_file_info = LastLogData(os.path.join(log_dir, file), log_date, ext)
-            if res_file_info is None or res_file_info.date < current_file_info.date:
-                res_file_info = current_file_info
+            if log_file_info is None or log_file_info.date < current_file_info.date:
+                log_file_info = current_file_info
 
-    if res_file_info:
-        report_path = get_report_path(res_file_info.date, conf)
+    if log_file_info:
+        report_path = get_report_path(log_file_info.date, conf)
         if os.path.isfile(report_path):
             raise FileExistsError(f"Report file already exists: {str(report_path)!r}")
-
-    return res_file_info
-
-
-def search_log_file(conf) -> LastLogData:
-    """
-    Returns last log file by date in the name of log.
-    :param conf: app configs
-    :return: named tuple (path_to_file, date_in_filename, file_extension)
-    """
-    logger_adapter.info("Searching last log file...")
-    log_file_info = search_last_log(conf)
 
     if log_file_info:
         logger_adapter.info(

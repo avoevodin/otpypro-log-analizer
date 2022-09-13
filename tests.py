@@ -33,7 +33,6 @@ with mock.patch(
         main as log_analyzer_main,
         parse_log_data,
         prepare_report_data,
-        search_last_log,
     )
 
 
@@ -261,7 +260,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         :return:
         """
         self.conf["LOG_DIR"] = "foo"
-        self.assertRaises(NotADirectoryError, search_last_log, self.conf)
+        self.assertRaises(NotADirectoryError, search_log_file, self.conf)
 
     def test_generate_report_while_report_exist(self) -> None:
         """
@@ -270,7 +269,7 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         """
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir)
         generate_report(self.conf, self.encoding, log_file_info_fixture)
-        self.assertRaises(FileExistsError, search_last_log, self.conf)
+        self.assertRaises(FileExistsError, search_log_file, self.conf)
 
     def test_get_log_data(self) -> None:
         """
