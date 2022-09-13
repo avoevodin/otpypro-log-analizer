@@ -295,9 +295,11 @@ class TestLogAnalyzer(TestCase):  # pragma: no cover
         log_file_info_fixture = generate_log_files(self.conf, self.log_dir, ".gz")
         log_file_info = search_log_file(self.conf)
         log_file_data = get_log_data(log_file_info, self.conf)
-        self.assertEqual(log_file_info.date, log_file_info_fixture.date)
-        self.assertEqual(log_file_info.path, log_file_info_fixture.path)
-        self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
+        self.assertIsNotNone(log_file_info)
+        if log_file_info is not None:
+            self.assertEqual(log_file_info.date, log_file_info_fixture.date)
+            self.assertEqual(log_file_info.path, log_file_info_fixture.path)
+            self.assertEqual(log_file_info.ext, log_file_info_fixture.ext)
 
         res_fixture = get_str_list_fixture()
         for line, fixt_line in zip(log_file_data, res_fixture):

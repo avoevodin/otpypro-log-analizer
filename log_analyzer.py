@@ -14,9 +14,21 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
+from io import TextIOWrapper
 from statistics import mean, median
 from string import Template
-from typing import Any, Dict, Generator, Optional, Tuple, Union, List
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Optional,
+    Tuple,
+    Union,
+    List,
+    Callable,
+    BinaryIO,
+    IO,
+)
 
 from config import get_config
 from utils.logging_utils import get_logger_adapter
@@ -36,7 +48,7 @@ LastLogData = namedtuple("LastLogData", "path, date, ext")
 logger_adapter = get_logger_adapter(__name__, get_config(config))
 
 
-def search_log_file(conf) -> Optional[LastLogData]:
+def search_log_file(conf) -> LastLogData:
     """
     Returns last log file by date in the name of log.
     :param conf: app configs
@@ -83,7 +95,11 @@ def get_log_data(log_file_info: LastLogData, conf: dict) -> Generator[str, None,
     :return: generator for strings of log file records
     """
     logger_adapter.info(f"Loading the log file {log_file_info.path!r}...")
-    open_fn = gzip.open if log_file_info.ext == ".gz" else open
+    gzip_open: Callable[[str, str], Any] = gzip.open
+    file_open: Callable[[str, str], Any] = open
+    open_fn: Callable[[str, str], Any] = (
+        gzip_open if log_file_info.ext == ".gz" else file_open
+    )
     with open_fn(log_file_info.path, "rb") as fb:
         for line in fb:
             yield line.decode(encoding=conf["DATA_ENCODING"])
