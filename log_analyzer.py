@@ -14,20 +14,16 @@ import re
 import sys
 from collections import namedtuple
 from datetime import datetime
-from io import TextIOWrapper
 from statistics import mean, median
 from string import Template
 from typing import (
     Any,
     Dict,
     Generator,
-    Optional,
     Tuple,
     Union,
     List,
     Callable,
-    BinaryIO,
-    IO,
 )
 
 from config import get_config
